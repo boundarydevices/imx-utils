@@ -1,0 +1,6 @@
+*.o
+camera_to_fb2
+devregs
+*.a
+version.h
+fb2_overlay
