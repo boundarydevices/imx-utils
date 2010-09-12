@@ -95,44 +95,56 @@ static void trimCtrl(char *buf){
 	}
 }
 
+static bool parseBits(char const *bitspec, unsigned &start, unsigned &count)
+{
+	char *end ;
+	unsigned startbit = strtoul(bitspec,&end,0);
+	if( (31 >= startbit)
+	    &&
+	    ( ('\0' == *end)
+	      ||
+	      ('-' == *end) ) ){
+		unsigned endbit ;
+		if( '-' == *end ){
+			endbit = strtoul(end+1,&end,0);
+			if('\0' != *end){
+				endbit = ~startbit ;
+			}
+		} else {
+			endbit = startbit ;
+		}
+		if(endbit<startbit) {
+			endbit ^= startbit ;
+			startbit ^= endbit ;
+			endbit  ^= startbit ;
+		}
+		unsigned const bitcount = endbit-startbit+1 ;
+		if( bitcount <= (32-startbit) ){
+			start = startbit ;
+			count = bitcount ;
+			return true ;
+		} else
+			fprintf(stderr, "Invalid bitspec '%s'. Use form 'start-end' in decimal (%u,%u,%u)\n", bitspec,startbit,endbit,bitcount );
+	} else
+		fprintf(stderr, "Invalid field '%s'. Use form 'start-end' in decimal (%u,%x)\n", bitspec,startbit,*end );
+
+	return false ;
+}
+
 static struct fieldDescription_t *parseFields
 	( struct reglist_t const *regs,
 	  char const *fieldname )
 {
 	if(isdigit(*fieldname)){
-		char *end ;
-		unsigned long startbit = strtoul(fieldname,&end,0);
-		if( (31 >= startbit)
-		    &&
-		    ( ('\0' == *end)
-		      ||
-                      ('-' == *end) ) ){
-			unsigned long endbit ;
-			if( '-' == *end ){
-				endbit = strtoul(end+1,&end,0);
-				if('\0' != *end){
-					endbit = ~startbit ;
-				}
-			} else {
-				endbit = startbit ;
-			}
-			if(endbit<startbit) {
-				endbit ^= startbit ;
-				startbit ^= endbit ;
-				endbit  ^= startbit ;
-			}
-			unsigned const bitcount = endbit-startbit+1 ;
-			if( bitcount <= (32-startbit) ){
-                                fieldDescription_t *f = new fieldDescription_t ;
-				f->name = fieldname ;
-				f->startbit = startbit ;
-				f->bitcount = bitcount ;
-				f->next = 0 ;
-				return f ;
-			} else
-				fprintf(stderr, "Invalid field '%s'. Use form 'start-end' in decimal (%lu,%lu,%u)\n", fieldname,startbit,endbit,bitcount );
-		} else
-			fprintf(stderr, "Invalid field '%s'. Use form 'start-end' in decimal (%lu,%x)\n", fieldname,startbit,*end );
+		unsigned start, count ;
+		if (parseBits(fieldname,start,count)){
+			fieldDescription_t *f = new fieldDescription_t ;
+			f->name = fieldname ;
+			f->startbit = start ;
+			f->bitcount = count ;
+			f->next = 0 ;
+			return f ;
+		}
 	} else if( regs ){
                 struct fieldDescription_t *head = 0 ;
 		struct fieldDescription_t *tail = 0 ;
@@ -272,11 +284,12 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 		char *regPart = strdup(regname);
 		char *fieldPart = strchr(regPart,'.');
 		unsigned fieldLen = 0 ;
+		if (0 == fieldPart)
+			fieldPart = strchr(regPart,':');
 		if (fieldPart) {
 			*fieldPart++ = '\0' ;
 			fieldLen = strlen(fieldPart);
 		}
-		printf( "regPart: %s, fieldPart %s\n", regPart, fieldPart);
 		unsigned const nameLen = strlen(regname);
 		while(defs){
                         if( 0 == strncasecmp(regPart,defs->reg->name,nameLen) ) {
@@ -284,16 +297,30 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 				memcpy(newOne,defs,sizeof(*newOne));
 				if (fieldPart) {
 					newOne->fields = 0 ;
-                                        fieldDescription_t *rhs = defs->fields ;
-					while (rhs) {
-						if( 0 == strncasecmp(fieldPart,rhs->name,fieldLen) ) {
-	                                                fieldDescription_t *newf = new struct fieldDescription_t ;
-							memcpy(newf,rhs,sizeof(*newf));
-							newf->next = newOne->fields ;
+					if (isdigit(*fieldPart)) {
+						unsigned start, count ;
+						if (parseBits(fieldPart,start,count)) {
+							fieldDescription_t *newf = new struct fieldDescription_t ;
+							newf->name = fieldPart ;
+							newf->startbit = start ;
+							newf->bitcount = count ;
+							newf->next = 0 ;
 							newOne->fields = newf ;
 						}
-						rhs = rhs->next ;
-					}
+						else
+							return 0 ;
+					} else {
+						fieldDescription_t *rhs = defs->fields ;
+						while (rhs) {
+							if( 0 == strncasecmp(fieldPart,rhs->name,fieldLen) ) {
+								fieldDescription_t *newf = new struct fieldDescription_t ;
+								memcpy(newf,rhs,sizeof(*newf));
+								newf->next = newOne->fields ;
+								newOne->fields = newf ;
+							}
+							rhs = rhs->next ;
+						}
+					} // search for named fields
 				} // only copy specified field
 				newOne->next = out ;
 				out = newOne ;
@@ -306,6 +333,19 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 		char *end ;
 		unsigned long address = strtoul(regname,&end,16);
 		if( (0 == *end) || (':' == *end) || ('.' == *end) ){
+                        struct fieldDescription_t *field = 0 ;
+			unsigned start, count ;
+			if ((':' == *end) || ('.' == *end)) {
+				unsigned start, count ;
+				if (parseBits(end+1,start,count)) {
+					printf("%s: %u..%u\n", __func__, start,start+count-1);
+					field = new struct fieldDescription_t ;
+					field->name = end+1 ;
+					field->startbit = start ;
+					field->bitcount = count ;
+					field->next = 0 ;
+				}
+			}
 			struct reglist_t *out = 0 ;
 			struct reglist_t const *defs = registerDefs();
 			unsigned const nameLen = strlen(regname);
@@ -314,6 +354,7 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 					out = new struct reglist_t ;
 					memcpy(out,defs,sizeof(*out));
 					out->next = 0 ;
+					out->fields = field ;
 					break;
 				}
 				defs = defs->next ;
