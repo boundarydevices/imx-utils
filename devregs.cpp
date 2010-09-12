@@ -413,6 +413,10 @@ static void showReg(struct reglist_t const *reg)
 		rv = *p ;
 		printf( "%s:0x%08lx == 0x%02lx\n", reg->reg ? reg->reg->name : "", reg->address, rv );
 	}
+	else {
+		fprintf(stderr, "Unsupported width in register %s\n", reg->reg->name);
+		return ;
+	}
 	struct fieldDescription_t *f = reg->fields ;
 	while(f){
 		printf( "   %s: %u.%u == 0x%x\n", f->name, f->startbit, f->bitcount, fieldVal(f,rv) );
@@ -436,13 +440,13 @@ static void putReg(struct reglist_t const *reg,unsigned long value){
 	}
 	unsigned long maxValue = mask >> shift ;
 	if (value > maxValue) {
-		fprintf(stderr, "Value 0x%x exceeds max 0x%lx for register %s\n", value, maxValue, reg->reg->name);
+		fprintf(stderr, "Value 0x%lx exceeds max 0x%lx for register %s\n", value, maxValue, reg->reg->name);
 		return ;
 	}
 	if( word_access ){
 		unsigned short volatile * const rv = (unsigned short volatile *)getReg(reg->address);
 		value = (*rv&~mask) | ((value<<shift)&mask);
-		printf( "%s:0x%08lx == 0x%08lx...", reg->reg ? reg->reg->name : "", reg->address, *rv );
+		printf( "%s:0x%08lx == 0x%08x...", reg->reg ? reg->reg->name : "", reg->address, *rv );
 		*rv = value ;
 	} else {
 		unsigned long volatile * const rv = getReg(reg->address);
@@ -450,12 +454,12 @@ static void putReg(struct reglist_t const *reg,unsigned long value){
 		printf( "%s:0x%08lx == 0x%08lx...", reg->reg ? reg->reg->name : "", reg->address, *rv );
 		*rv = value ;
 	}
-	printf( "0x%08x\n", value );
+	printf( "0x%08lx\n", value );
 }
 
 static void parseArgs( int &argc, char const **argv )
 {
-	for( unsigned arg = 1 ; arg < argc ; arg++ ){
+	for( int arg = 1 ; arg < argc ; arg++ ){
 		if( '-' == *argv[arg] ){
 			char const *param = argv[arg]+1 ;
 			if( 'w' == tolower(*param) ){
