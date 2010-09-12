@@ -9,14 +9,14 @@
  *	devregs register
  *		- display all registers matching register (strcasestr)
  *
- *	devregs register:field
+ *	devregs register.field
  *		- display all registers matching register (strcasestr)
  *		- also break out specified field
  *
  *	devregs register value
  *		- set register to specified value (must match single register)
  *
- *	devregs register:field value
+ *	devregs register.field value
  *		- set register field to specified value (read/modify/write)
  *
  * Registers may be specified by name or 0xADDRESS. If specified by name, all
@@ -25,15 +25,9 @@
  *
  * fields may be specified by name or bit numbers of the form "start[-end]"
  *
- * (c) Copyright 2002 by M&N Logistik-Lösungen Online GmbH
- * set under the GPLv2
+ * (c) Copyright 2010 by Boundary Devices under GPLv2
  *
- * $Id: pxaregs.c,v 1.7 2009-01-28 20:27:55 valli Exp $
- *
- * Please send patches to h.schurig, working at mn-logistik.de
- * - added fix from Bernhard Nemec
- * - i2c registers from Stefan Eletzhofer
-*/
+ */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -275,16 +269,38 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 	if(isalpha(c) || ('_' == c)){
                 struct reglist_t *out = 0 ;
                 struct reglist_t const *defs = registerDefs();
+		char *regPart = strdup(regname);
+		char *fieldPart = strchr(regPart,'.');
+		unsigned fieldLen = 0 ;
+		if (fieldPart) {
+			*fieldPart++ = '\0' ;
+			fieldLen = strlen(fieldPart);
+		}
+		printf( "regPart: %s, fieldPart %s\n", regPart, fieldPart);
 		unsigned const nameLen = strlen(regname);
 		while(defs){
-                        if( 0 == strncasecmp(regname,defs->reg->name,nameLen) ) {
+                        if( 0 == strncasecmp(regPart,defs->reg->name,nameLen) ) {
 				struct reglist_t *newOne = new struct reglist_t ;
 				memcpy(newOne,defs,sizeof(*newOne));
+				if (fieldPart) {
+					newOne->fields = 0 ;
+                                        fieldDescription_t *rhs = defs->fields ;
+					while (rhs) {
+						if( 0 == strncasecmp(fieldPart,rhs->name,fieldLen) ) {
+	                                                fieldDescription_t *newf = new struct fieldDescription_t ;
+							memcpy(newf,rhs,sizeof(*newf));
+							newf->next = newOne->fields ;
+							newOne->fields = newf ;
+						}
+						rhs = rhs->next ;
+					}
+				} // only copy specified field
 				newOne->next = out ;
 				out = newOne ;
 			}
 			defs = defs->next ;
 		}
+		free(regPart);
 		return out ;
 	} else if(isdigit(c)){
 		char *end ;
@@ -405,13 +421,32 @@ static void showReg(struct reglist_t const *reg)
 }
 
 static void putReg(struct reglist_t const *reg,unsigned long value){
-	printf( "store value 0x%08lx here\n", value );
+	unsigned address = 0 ;
+	unsigned shift = 0 ;
+	unsigned long mask = 0xffffffff ;
+	if (reg->fields) {
+		// Only single field allowed
+		if (0 == reg->fields->next) {
+			shift = reg->fields->startbit ;
+			mask = ((1<<reg->fields->bitcount)-1)<<shift ;
+		} else {
+			fprintf(stderr, "More than one field matched %s\n", reg->reg->name);
+			return ;
+		}
+	}
+	unsigned long maxValue = mask >> shift ;
+	if (value > maxValue) {
+		fprintf(stderr, "Value 0x%x exceeds max 0x%lx for register %s\n", value, maxValue, reg->reg->name);
+		return ;
+	}
 	if( word_access ){
 		unsigned short volatile * const rv = (unsigned short volatile *)getReg(reg->address);
+		value = (*rv&~mask) | ((value<<shift)&mask);
 		printf( "%s:0x%08lx == 0x%08lx...", reg->reg ? reg->reg->name : "", reg->address, *rv );
 		*rv = value ;
 	} else {
 		unsigned long volatile * const rv = getReg(reg->address);
+		value = (*rv&~mask) | ((value<<shift)&mask);
 		printf( "%s:0x%08lx == 0x%08lx...", reg->reg ? reg->reg->name : "", reg->address, *rv );
 		*rv = value ;
 	}
@@ -469,7 +504,8 @@ int main(int argc, char const **argv)
 				} else 
 					fprintf( stderr, "Invalid value '%s', use hex\n", argv[2] );
 			}
-		}
+		} else
+			fprintf (stderr, "Nothing matched %s\n", argv[1]);
 	}
 	return 1;
 }
