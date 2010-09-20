@@ -107,6 +107,8 @@ static void trimCtrl(char *buf){
 #include <linux/fb.h>
 #include <sys/ioctl.h>
 
+static bool doExit = false ;
+
 static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
 {
         trimCtrl(cmd);
@@ -173,6 +175,11 @@ static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
 					saveJPEG = true ;
 					fileName = strdup(split.getPtr(1));
 				}
+				break;
+			}
+                        case 'x': {
+				close(fd);
+				doExit = true ;
 				break;
 			}
                         case '?': {
@@ -370,7 +377,7 @@ int main( int argc, char const **argv ) {
                                 unsigned totalFrames = 0 ;
                                 unsigned outDrops = 0 ;
                                 long long start = tickMs();
-                                while (1) {
+                                while (!doExit) {
                                         void const *camera_frame ;
                                         int index ;
                                         if ( camera.grabFrame(camera_frame,index) ) {
@@ -397,7 +404,7 @@ int main( int argc, char const **argv ) {
 						phys_to_fb2(camera_frame,camera.imgSize(),overlay,params);
                                                 camera.returnFrame(camera_frame,index);
                                         }
-                                        if ( isatty(0) ) {
+                                        if (1){ // isatty(0) ) {
                                                 struct pollfd fds[1];
                                                 fds[0].fd = fileno(stdin); // STDIN
                                                 fds[0].events = POLLIN|POLLERR;
@@ -406,7 +413,6 @@ int main( int argc, char const **argv ) {
                                                         char inBuf[512];
                                                         if ( fgets(inBuf,sizeof(inBuf),stdin) ) {
                                                                 trimCtrl(inBuf);
-                                                                printf( "You entered <%s>\n", inBuf);
                                                                 process_command(inBuf, overlay.getFd(), overlay.getMem(), overlay.getMemSize());
                                                                 long long elapsed = tickMs()-start;
                                                                 if ( 0LL == elapsed )
