@@ -1,4 +1,0 @@
-#ifndef __IMX_CAMERA_VERSION_H__
-#define __IMX_CAMERA_VERSION_H__
-#define IMX_CAMERA_VERSION "d24291a424248e7e82557d6afd0aaf50322ce56c"
-#endif

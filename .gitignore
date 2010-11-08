@@ -4,3 +4,5 @@ devregs
 *.a
 version.h
 fb2_overlay
+devregs
+version.h
