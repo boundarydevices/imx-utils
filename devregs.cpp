@@ -61,9 +61,17 @@ struct reglist_t {
 	struct reglist_t		*next ;
 };
 
+struct	fieldSet_t {
+	char const 			*name ;
+	struct fieldDescription_t	*fields ;
+        struct	fieldSet_t 		*next ;
+};
+
 static char const devregsPath[] = {
 	"/etc/devregs.dat"
 };
+
+static struct fieldSet_t *fieldsets = 0 ;
 
 /* 
  * strips comments as well as skipping leading spaces
@@ -172,12 +180,31 @@ static struct fieldDescription_t *parseFields
 	return 0 ;
 }
 
+/*
+ * registerDefs()	- parses register specs from devRegsPath
+ *
+ *	- Outer loop determines which type of line we're dealing with
+ *	based on the first character:
+ *		A-Za-z_		- Register:	Name	0xADDRESS[.w|.l|.b]
+ *		:		- Field		:fieldname:startbit[-stopbit]
+ *		/		- Field set	/Fieldsetname
+ *
+ *	state field is used to determine whether a field will be added to the
+ *	most recent register or fieldset.
+ */
+enum ftState {
+	FT_UNKNOWN	= -1,
+	FT_REGISTER	= 0,
+	FT_FIELDSET	= 1
+};
+
 static struct reglist_t const *registerDefs(void){
 	static struct reglist_t *regs = 0 ;
 	if( 0 == regs ){
 		struct reglist_t *head = 0, *tail = 0 ;
 		FILE *fDefs = fopen(devregsPath, "rt");
 		if( fDefs ){
+                        enum ftState state = FT_UNKNOWN ;
 			char inBuf[256];
 			int lineNum = 0 ;
 			while( fgets(inBuf,sizeof(inBuf),fDefs) ){
@@ -187,7 +214,7 @@ static struct reglist_t const *registerDefs(void){
 				if( *next && ('#' != *next) ){
 					trimCtrl(next);
 				} // not blank or comment
-				if(isalpha(*next)){
+				if(isalpha(*next) || ('_' == *next)){
 					char *start = next++ ;
 					while(isalnum(*next) || ('_' == *next)){
 						next++ ;
@@ -230,6 +257,7 @@ static struct reglist_t const *registerDefs(void){
 								} else
 									head = newone ;
 								tail = newone ;
+                                                                state = FT_REGISTER ;
 //								printf( "%s: 0x%x, width %u\n", newone->reg->name, newone->address, newone->width);
 								continue;
 							}
@@ -240,27 +268,67 @@ static struct reglist_t const *registerDefs(void){
 							fprintf(stderr, "expecting hex digit, not %02x\n", (unsigned char)*next );
 					}
 					fprintf(stderr, "%s: syntax error on line %u <%s>\n", devregsPath, lineNum,next );
-				} else if((':' == *next) && tail) {
+				} else if((':' == *next) && (FT_UNKNOWN != state)) {
                                         next=skipSpaces(next+1);
 					char *start = next++ ;
 					while(isalnum(*next) || ('_' == *next)){
 						next++ ;
 					}
+					unsigned nameLen = next-start ;
+					char *name = new char [nameLen+1];
+					memcpy(name,start,nameLen);
+					name[nameLen] = 0 ;
 					if( ':' == *next ){
-						unsigned nameLen = next-start ;
-						char *fieldName = new char [nameLen+1];
-						memcpy(fieldName,start,nameLen);
-						fieldName[nameLen] = 0 ;
 						struct fieldDescription_t *field = parseFields(tail,next+1);
 						if(field){
-							field->name = fieldName ;
-							field->next = tail->fields ;
-							tail->fields = field ;
+							field->name = name ;
+							if (FT_REGISTER == state) {
+								field->next = tail->fields ;
+								tail->fields = field ;
+							} else {
+								field->next = fieldsets->fields ;
+								fieldsets->fields = field ;
+							}
 						} else 
                                                         fprintf( stderr, "error parsing field at line %u\n", lineNum );
+					} else if (('/' == *next) && (FT_REGISTER == state)) {
+						struct fieldSet_t const *fs = fieldsets ;
+						while (fs) {
+							if (0 == strcmp(fs->name,name))
+								break;
+							fs = fs->next ;
+						}
+						if (fs) {
+							if (tail->fields) {
+                                                                struct fieldDescription_t *back = tail->fields ;
+                                                                struct fieldDescription_t *front = back ;
+								while(front) {
+									back = front ;
+									front = back->next ;
+								}
+								back->next = fs->fields ;
+							} else
+                                                                tail->fields = fs->fields ;
+							state = FT_UNKNOWN ; /* don't allow fields to be added */
+						}
 					} else {
 						fprintf( stderr, "missing field separator at line %u\n", lineNum );
 					}
+				} else if ('/' == *next) {
+					char *start = ++next ;
+					while(isalnum(*next) || ('_' == *next)){
+						next++ ;
+					}
+					if ((start < next) && (isspace(*next) || ('\0'==*next))) {
+						*next = '\0' ;
+                                                struct	fieldSet_t  *fs = (struct fieldSet_t *)malloc(sizeof(struct fieldSet_t ));
+						fs->name = strdup(start);
+						fs->fields = 0 ;
+						fs->next = fieldsets ;
+						fieldsets = fs ;
+						state = FT_FIELDSET ;
+					} else
+						fprintf(stderr,"Invalid fieldset name %s\n",start-1);
 				} else if (*next && ('#' != *next)) {
 					fprintf(stderr, "Unrecognized line <%s> at %u\n", next, lineNum );
 				}
@@ -444,15 +512,15 @@ static void showReg(struct reglist_t const *reg)
 	if( 2 == reg->width ) {
 		unsigned short volatile *p = (unsigned short volatile *)regPtr ;
 		rv = *p ;
-		printf( "%s:0x%08lx == 0x%04lx\n", reg->reg ? reg->reg->name : "", reg->address, rv );
+		printf( "%s:0x%08lx\t=0x%04lx\n", reg->reg ? reg->reg->name : "", reg->address, rv );
 	} else if( 4 == reg->width ) {
 		unsigned long volatile *p = regPtr ;
 		rv = *p ;
-		printf( "%s:0x%08lx == 0x%08lx\n", reg->reg ? reg->reg->name : "", reg->address, rv );
+		printf( "%s:0x%08lx\t=0x%08lx\n", reg->reg ? reg->reg->name : "", reg->address, rv );
 	} else if( 1 == reg->width ) {
 		unsigned char volatile *p = (unsigned char volatile *)regPtr ;
 		rv = *p ;
-		printf( "%s:0x%08lx == 0x%02lx\n", reg->reg ? reg->reg->name : "", reg->address, rv );
+		printf( "%s:0x%08lx\t=0x%02lx\n", reg->reg ? reg->reg->name : "", reg->address, rv );
 	}
 	else {
 		fprintf(stderr, "Unsupported width in register %s\n", reg->reg->name);
@@ -460,7 +528,7 @@ static void showReg(struct reglist_t const *reg)
 	}
 	struct fieldDescription_t *f = reg->fields ;
 	while(f){
-		printf( "   %s: %u.%u == 0x%x\n", f->name, f->startbit, f->bitcount, fieldVal(f,rv) );
+		printf( "\t%-16s\t%2u-%2u\t=0x%x\n", f->name, f->startbit, f->startbit+f->bitcount-1, fieldVal(f,rv) );
 		f=f->next ;
 	}
 }
@@ -484,10 +552,15 @@ static void putReg(struct reglist_t const *reg,unsigned long value){
 		fprintf(stderr, "Value 0x%lx exceeds max 0x%lx for register %s\n", value, maxValue, reg->reg->name);
 		return ;
 	}
-	if( word_access ){
+	if( 1 == reg->width ){
+		unsigned char volatile * const rv = (unsigned char volatile *)getReg(reg->address);
+		value = (*rv&~mask) | ((value<<shift)&mask);
+		printf( "%s:0x%02lx == 0x%02x...", reg->reg ? reg->reg->name : "", reg->address, *rv );
+		*rv = value ;
+	} else if( 2 == reg->width ){
 		unsigned short volatile * const rv = (unsigned short volatile *)getReg(reg->address);
 		value = (*rv&~mask) | ((value<<shift)&mask);
-		printf( "%s:0x%08lx == 0x%08x...", reg->reg ? reg->reg->name : "", reg->address, *rv );
+		printf( "%s:0x%04lx == 0x%04x...", reg->reg ? reg->reg->name : "", reg->address, *rv );
 		*rv = value ;
 	} else {
 		unsigned long volatile * const rv = getReg(reg->address);
