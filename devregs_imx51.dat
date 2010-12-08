@@ -192,6 +192,19 @@
 	:ODE:3
 	:DSE:1-2
 	:SRE:0
+/pad_6f
+	:HYS:8
+	:PKE:7
+	:PUE:6
+	:ODE:3
+	:DSE:1-2
+	:SRE:0
+/pad_5f
+	:HYS:8
+	:PKE:7
+	:PUE:6
+	:DSE:1-2
+	:SRE:0
 /fs140		#usage 3
 	:DAISY:0-2
 /fs141		#usage 2
@@ -2575,29 +2588,53 @@ IOMUXC_SW_PAD_CTL_PAD_DISP1_DAT22                               0X73FA8724
 IOMUXC_SW_PAD_CTL_PAD_DISP1_DAT23                               0X73FA8728
 	:fs138/
 IOMUXC_SW_PAD_CTL_PAD_DI1_PIN2                                  0X73FA8734
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DI1_PIN15                                 0X73FA8738
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DI2_PIN4                                  0X73FA8748
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DI2_PIN2                                  0X73FA874C
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DI2_PIN3                                  0X73FA8750
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DI1_DISP_CLK                              0X73FA8730
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DI2_DISP_CLK                              0X73FA8754
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DI_GP4                                    0X73FA8758
+	:pad_5f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT0                                0X73FA875C
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT1                                0X73FA8760
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT2                                0X73FA8764
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT3                                0X73FA8768
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT4                                0X73FA876C
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT5                                0X73FA8770
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT6                                0X73FA8774
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT7                                0X73FA8778
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT8                                0X73FA877C
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT9                                0X73FA8780
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT10                               0X73FA8784
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT11                               0X73FA8788
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT12                               0X73FA878C
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT13                               0X73FA8790
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT14                               0X73FA8794
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_DISP2_DAT15                               0X73FA8798
+	:pad_6f/
 IOMUXC_SW_PAD_CTL_PAD_SD1_CMD                                   0X73FA879C
 IOMUXC_SW_PAD_CTL_PAD_SD1_CLK                                   0X73FA87A0
 IOMUXC_SW_PAD_CTL_PAD_SD1_DATA0                                 0X73FA87A4
