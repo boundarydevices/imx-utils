@@ -2050,10 +2050,6 @@ CMEOR                                                           0X73FD4084
 	:MOD_EN_OV_IIM:3
 	:MOD_EN_OV_OWIRE:2
 	:MOD_EN_OV_SAHARA:0
-M4IF_BASE_ADDR                                                  0X83FD8000
-M4IF_CNTL_REG0                                                  0X83FD808C
-M4IF_CNTL_REG1                                                  0X83FD8090
-EMI_BASE_ADDR                                                   0X83FDBF00
 UART0_URXD                                                      0X73FBC000.W
 UART0_UTXD                                                      0X73FBC040.W
 UART0_UCR1                                                      0X73FBC080.W
@@ -2746,24 +2742,6 @@ GPIO4_ICR2                                                      0X73F90010
 GPIO4_IMR                                                       0X73F90014
 GPIO4_ISR                                                       0X73F90018
 GPIO4_EDGE                                                      0X73F9001C
-I2C1_IADR                                                       0X83FC8000.W
-	:fs145/
-I2C1_IFDR                                                       0X83FC8004.W
-	:fs146/
-I2C1_I2CR                                                       0X83FC8008.W
-	:fs147/
-I2C1_I2SR                                                       0X83FC800C.W
-	:fs148/
-I2C1_I2DR                                                       0X83FC8010.W
-I2C2_IADR                                                       0X83FC4000.W
-	:fs145/
-I2C2_IFDR                                                       0X83FC4004.W
-	:fs146/
-I2C2_I2CR                                                       0X83FC4008.W
-	:fs147/
-I2C2_I2SR                                                       0X83FC400C.W
-	:fs148/
-I2C2_I2DR                                                       0X83FC4010.W
 PLL1_BASE_ADDR                                                  0X83F80000
 PLL1_DP_CTL                                                     0X83F80000
 	:fs149/
@@ -2831,3 +2809,65 @@ PLL3_DP_HFS_MFN                                                 0X83F88024
 	:fs153/
 PLL3_DP_MFN_TOGC                                                0X83F88028
 	:fs155/
+I2C1_IADR                                                       0X83FC8000.W
+	:fs145/
+I2C1_IFDR                                                       0X83FC8004.W
+	:fs146/
+I2C1_I2CR                                                       0X83FC8008.W
+	:fs147/
+I2C1_I2SR                                                       0X83FC800C.W
+	:fs148/
+I2C1_I2DR                                                       0X83FC8010.W
+I2C2_IADR                                                       0X83FC4000.W
+	:fs145/
+I2C2_IFDR                                                       0X83FC4004.W
+	:fs146/
+I2C2_I2CR                                                       0X83FC4008.W
+	:fs147/
+I2C2_I2SR                                                       0X83FC400C.W
+	:fs148/
+I2C2_I2DR                                                       0X83FC4010.W
+
+M4IF_BASE_ADDR                                                  0X83FD8000
+M4IF_CNTL_REG0                                                  0X83FD808C
+M4IF_CNTL_REG1                                                  0X83FD8090
+EMI_BASE_ADDR                                                   0X83FDBF00
+
+FEC_EIR 							0x83FEC004
+FEC_EIMR 							0x83FEC008
+FEC_RDAR 							0x83FEC010
+FEC_TDAR 							0x83FEC014
+FEC_ECR 							0x83FEC024
+FEC_MMFR 							0x83FEC040
+FEC_MSCR 							0x83FEC044
+	:MII_SPEED:6-1
+	:DIS_PREAMBLE:7
+FEC_MIBC 							0x83FEC064
+FEC_RCR 							0x83FEC084
+FEC_TCR 							0x83FEC0C4
+FEC_PALR 							0x83FEC0E4
+FEC_PAUR 							0x83FEC0E8
+FEC_OPD 							0x83FEC0EC
+FEC_IAUR 							0x83FEC118
+FEC_IALR 							0x83FEC11C
+FEC_GAUR 							0x83FEC120
+FEC_GALR 							0x83FEC124
+FEC_TFWR 							0x83FEC144
+FEC_FRBR 							0x83FEC14C
+FEC_FRSR 							0x83FEC150
+FEC_ERDSR 							0x83FEC180
+FEC_ETDSR 							0x83FEC184
+FEC_EMRBR 							0x83FEC188
+FEC_RMON_T_DROP 						0x83FEC200
+FEC_RMON_T_PACKETS 						0x83FEC204
+FEC_RMON_T_BC_PKT 						0x83FEC208
+FEC_RMON_T_MC_PKT 						0x83FEC20C
+FEC_RMON_T_CRC_ALIGN 						0x83FEC210
+FEC_RMON_T_UNDERSIZE 						0x83FEC214
+FEC_RMON_T_OVERSIZE 						0x83FEC218
+FEC_RMON_T_FRAG 						0x83FEC21C
+FEC_RMON_T_JAB 							0x83FEC220
+FEC_RMON_T_COL 							0x83FEC224
+FEC_RMON_T_P64 							0x83FEC228
+FEC_RMON_T_P65TO127 						0x83FEC22C
+
