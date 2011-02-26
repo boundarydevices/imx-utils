@@ -1,3 +1,45 @@
+/uart_urxd
+	:CHARRDY:15
+	:ERR:14
+	:OVRRUN:13
+	:FRMERR:12
+	:BRK:11
+	:PRERR:10
+	:DATA:7-0
+/uart_ucr2
+	:ESCI:15
+	:IRTS:14
+	:CTSC:13
+	:CTS:12
+	:ESCEN:11
+	:RTEC:10-9
+	:PREN:8
+	:PROE:7
+	:STPB:6
+	:WS:5
+	:RTSEN:4
+	:ATEN:3
+	:TXEN:2
+	:RXEN:1
+	:SRS:0
+/uart_usr1
+	:PARITYERR:15
+	:RTSS:14
+	:TRDY:13
+	:RTSD:12
+	:ESCF:11
+        :FRAMERR:10
+        :RRDY:9
+        :AGTIM:8
+        :DTRD:7
+	:RXDS:6
+	:AIRINT:5
+        :AWAKE:4
+/uart_ufcr
+	:RXTL:5-0
+	:DCEDTE:6
+	:RFDIV:9-7
+	:TXTL:15-10
 /fs25		#usage 2
 	:PIN8_PIN15_SEL:31
 	:DISP_Y_SEL:28-30
@@ -48,7 +90,7 @@
 	:NI_YB:0-11
 	:NI_NSB:12
 	:NI_CF:13
-/fs82		#usage 2
+/pwmcr		#usage 2
 	:FWM:26-27
 	:STOPEN:25
 	:DOZEN:24
@@ -62,21 +104,21 @@
 	:SWR:3
 	:REPEAT:1-2
 	:EN:0
-/fs83		#usage 2
+/pwmsr		#usage 2
 	:FWE:6
 	:CMP:5
 	:ROV:4
 	:FE:3
 	:FIFOAV:0-2
-/fs84		#usage 2
+/pwmir		#usage 2
 	:CIE:2
 	:RIE:1
 	:FIE:0
-/fs85		#usage 2
+/pwmsar		#usage 2
 	:SAMPLE:0-15
-/fs86		#usage 2
+/pwmpr		#usage 2
 	:PERIOD:0-15
-/fs87		#usage 2
+/pwmcnr		#usage 2
 	:COUNT:0-15
 /fs109		#usage 2
 	:ARM_PODF_LOADED:26
@@ -218,18 +260,18 @@
 /fs143		#usage 3
 	:HYS:8
 	:SRE:0
-/fs145		#usage 2
+/i2caddr		#usage 2
 	:ADR:1-7
-/fs146		#usage 2
+/ifdr		#usage 2
 	:IC:0-5
-/fs147		#usage 2
+/i2cr		#usage 2
 	:IEN:7
 	:IIEN:6
 	:MSTA:5
 	:MTX:4
 	:TXAK:3
 	:RSTA:2
-/fs148		#usage 2
+/i2sr		#usage 2
 	:ICF:7
 	:IAAS:6
 	:IBB:5
@@ -1705,30 +1747,30 @@ WDOG1_WMCR                                                      0X73F98008.W
 IOMUXC_BASE_ADDR                                                0X73FA8000
 PWM1_BASE_ADDR                                                  0X73FB4000
 PWM1_PWMCR                                                      0X73FB4000
-	:fs82/
+	:pwmcr/
 PWM1_PWMSR                                                      0X73FB4004
-	:fs83/
+	:pwmsr/
 PWM1_PWMIR                                                      0X73FB4008
-	:fs84/
+	:pwmir/
 PWM1_PWMSAR                                                     0X73FB400C
-	:fs85/
+	:pwmsar/
 PWM1_PWMPR                                                      0X73FB4010
-	:fs86/
+	:pwmpr/
 PWM1_PWMCNR                                                     0X73FB4014
-	:fs87/
+	:pwmcnr/
 PWM2_BASE_ADDR                                                  0X73FB8000
 PWM2_PWMCR                                                      0X73FB8000
-	:fs82/
+	:pwmcr/
 PWM2_PWMSR                                                      0X73FB8004
-	:fs83/
+	:pwmsr/
 PWM2_PWMIR                                                      0X73FB8008
-	:fs84/
+	:pwmir/
 PWM2_PWMSAR                                                     0X73FB800C
-	:fs85/
+	:pwmsar/
 PWM2_PWMPR                                                      0X73FB8010
-	:fs86/
+	:pwmpr/
 PWM2_PWMCNR                                                     0X73FB8014
-	:fs87/
+	:pwmcnr/
 CCM_BASE_ADDR                                                   0X73FD4000
 CCR                                                             0X73FD4000
 	:COSC_EN:12
@@ -2051,6 +2093,7 @@ CMEOR                                                           0X73FD4084
 	:MOD_EN_OV_OWIRE:2
 	:MOD_EN_OV_SAHARA:0
 UART0_URXD                                                      0X73FBC000.W
+	:uart_urxd/
 UART0_UTXD                                                      0X73FBC040.W
 UART0_UCR1                                                      0X73FBC080.W
 	:UART0_ADEN:15
@@ -2069,6 +2112,7 @@ UART0_UCR1                                                      0X73FBC080.W
 	:UART0_DOZE:1
 	:UART0_UARTEN:0
 UART0_UCR2                                                      0X73FBC084.W
+	:uart_ucr2/
 UART0_UCR3                                                      0X73FBC088.W
 UART0_UCR4                                                      0X73FBC08C.W
 	:UART0_CTSTL:10-15
@@ -2083,7 +2127,9 @@ UART0_UCR4                                                      0X73FBC08C.W
 	:UART0_OREN:1
 	:UART0_DREN:0
 UART0_UFCR                                                      0X73FBC090.W
+	:uart_ufcr/
 UART0_USR1                                                      0X73FBC094.W
+	:uart_usr1/
 UART0_USR2                                                      0X73FBC098.W
 UART0_UESC                                                      0X73FBC09C.W
 UART0_UTIM                                                      0X73FBC0A0.W
@@ -2092,6 +2138,8 @@ UART0_UBMR                                                      0X73FBC0A8.W
 UART0_UBRC                                                      0X73FBC0AC.W
 UART0_ONEMS                                                     0X73FBC0B0.W
 UART0_UTS                                                       0X73FBC0B4.W
+UART1_URXD                                                      0X73FC0000.W
+	:uart_urxd/
 UART1_UCR1                                                      0X73FC0080.W
 	:UART1_ADEN:15
 	:UART1_ADBR:14
@@ -2109,6 +2157,7 @@ UART1_UCR1                                                      0X73FC0080.W
 	:UART1_DOZE:1
 	:UART1_UARTEN:0
 UART1_UCR2                                                      0X73FC0084.W
+	:uart_ucr2/
 UART1_UCR3                                                      0X73FC0088.W
 UART1_UCR4                                                      0X73FC008C.W
 	:UART1_CTSTL:10-15
@@ -2123,7 +2172,9 @@ UART1_UCR4                                                      0X73FC008C.W
 	:UART1_OREN:1
 	:UART1_DREN:0
 UART1_UFCR                                                      0X73FC0090.W
+	:uart_ufcr/
 UART1_USR1                                                      0X73FC0094.W
+	:uart_usr1/
 UART1_USR2                                                      0X73FC0098.W
 UART1_UESC                                                      0X73FC009C.W
 UART1_UTIM                                                      0X73FC00A0.W
@@ -2132,6 +2183,8 @@ UART1_UBMR                                                      0X73FC00A8.W
 UART1_UBRC                                                      0X73FC00AC.W
 UART1_ONEMS                                                     0X73FC00B0.W
 UART1_UTS                                                       0X73FC00B4.W
+UART2_URXD                                                      0X7000C000.W
+	:uart_urxd/
 UART2_UCR1                                                      0X7000C080.W
 	:UART2_ADEN:15
 	:UART2_ADBR:14
@@ -2149,6 +2202,7 @@ UART2_UCR1                                                      0X7000C080.W
 	:UART2_DOZE:1
 	:UART2_UARTEN:0
 UART2_UCR2                                                      0X7000C084.W
+	:uart_ucr2/
 UART2_UCR3                                                      0X7000C088.W
 UART2_UCR4                                                      0X7000C08C.W
 	:UART2_CTSTL:10-15
@@ -2163,7 +2217,9 @@ UART2_UCR4                                                      0X7000C08C.W
 	:UART2_OREN:1
 	:UART2_DREN:0
 UART2_UFCR                                                      0X7000C090.W
+	:uart_ufcr/
 UART2_USR1                                                      0X7000C094.W
+	:uart_usr1/
 UART2_USR2                                                      0X7000C098.W
 UART2_UESC                                                      0X7000C09C.W
 UART2_UTIM                                                      0X7000C0A0.W
@@ -2659,10 +2715,6 @@ IOMUXC_SW_PAD_CTL_PAD_GPIO1_9                                   0X73FA8818
 IOMUXC_SW_PAD_CTL_GRP_EMI_DS6                                   0X73FA88C0
 IOMUXC_CCM_IPP_DI1_CLK_SELECT_INPUT                             0X73FA8908
 IOMUXC_HSC_MIPI_MIX_IPP_IND_SENS2_DATA_EN_SELECT_INPUT          0X73FA89A0
-IOMUXC_I2C2_IPP_SDA_IN_SELECT_INPUT                             0X73FA89BC
-	:fs140/
-IOMUXC_I2C2_IPP_SCL_IN_SELECT_INPUT                             0X73FA89B8
-	:fs140/
 IOMUXC_SW_MUX_CTL_PAD_DI1_PIN13                                 0X73FA82B0
 IOMUXC_SW_MUX_CTL_PAD_DI1_D1_CS                                 0X73FA82B8
 IOMUXC_SW_MUX_CTL_PAD_DI1_PIN3                                  0X73FA832C
@@ -2682,6 +2734,14 @@ IOMUXC_GPIO3_IPP_IND_G_IN_7_SELECT_INPUT                        0X73FA8990
 	:fs141/
 IOMUXC_GPIO3_IPP_IND_G_IN_8_SELECT_INPUT                        0X73FA8994
 	:fs141/
+IOMUXC_I2C1_IPP_SCL_IN_SELECT_INPUT				0X73FA89b0
+	:fs140/
+IOMUXC_I2C1_IPP_SDA_IN_SELECT_INPUT                             0X73FA89b4
+	:fs140/
+IOMUXC_I2C2_IPP_SCL_IN_SELECT_INPUT                             0X73FA89b8
+	:fs140/
+IOMUXC_I2C2_IPP_SDA_IN_SELECT_INPUT                             0X73FA89bc
+	:fs140/
 IOMUXC_SW_MUX_CTL_PAD_UART1_RXD                                 0X73FA8228
 	:fs126/
 IOMUXC_SW_MUX_CTL_PAD_UART1_TXD                                 0X73FA822C
@@ -2810,22 +2870,22 @@ PLL3_DP_HFS_MFN                                                 0X83F88024
 PLL3_DP_MFN_TOGC                                                0X83F88028
 	:fs155/
 I2C1_IADR                                                       0X83FC8000.W
-	:fs145/
+	:i2caddr/
 I2C1_IFDR                                                       0X83FC8004.W
-	:fs146/
+	:ifdr/
 I2C1_I2CR                                                       0X83FC8008.W
-	:fs147/
+	:i2cr/
 I2C1_I2SR                                                       0X83FC800C.W
-	:fs148/
+	:i2sr/
 I2C1_I2DR                                                       0X83FC8010.W
 I2C2_IADR                                                       0X83FC4000.W
-	:fs145/
+	:i2caddr/
 I2C2_IFDR                                                       0X83FC4004.W
-	:fs146/
+	:ifdr/
 I2C2_I2CR                                                       0X83FC4008.W
-	:fs147/
+	:i2cr/
 I2C2_I2SR                                                       0X83FC400C.W
-	:fs148/
+	:i2sr/
 I2C2_I2DR                                                       0X83FC4010.W
 
 M4IF_BASE_ADDR                                                  0X83FD8000
