@@ -160,7 +160,7 @@ static struct fieldDescription_t *parseFields
 			if( regs->reg ){
 				struct fieldDescription_t *f = regs->reg->fields ;
 				while( f ){
-					if( 0 != strcasestr(f->name,fieldname) ){
+					if( 0 == strcasecmp(f->name,fieldname) ){
 						struct fieldDescription_t *newf = new struct fieldDescription_t ;
 						*newf = *f ;
 						newf->next = 0 ;
@@ -336,8 +336,6 @@ static struct reglist_t const *registerDefs(void){
 			fclose(fDefs);
 			regs = head ;
 		}
-		else
-			perror(devregsPath);
 	}
 	return regs ;
 }
@@ -351,9 +349,14 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
                 struct reglist_t const *defs = registerDefs();
 		char *regPart = strdup(regname);
 		char *fieldPart = strchr(regPart,'.');
+		bool widthspec = false ;
 		unsigned fieldLen = 0 ;
-		if (0 == fieldPart)
+		if (0 == fieldPart) {
 			fieldPart = strchr(regPart,':');
+			widthspec = false ;
+		}
+		else
+			widthspec = true ;
 		if (fieldPart) {
 			*fieldPart++ = '\0' ;
 			fieldLen = strlen(fieldPart);
@@ -380,7 +383,7 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 					} else {
 						fieldDescription_t *rhs = defs->fields ;
 						while (rhs) {
-							if( 0 == strncasecmp(fieldPart,rhs->name,fieldLen) ) {
+							if( 0 == strcasecmp(fieldPart,rhs->name) ) {
 								fieldDescription_t *newf = new struct fieldDescription_t ;
 								memcpy(newf,rhs,sizeof(*newf));
 								newf->next = newOne->fields ;
@@ -403,17 +406,6 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 		if( (0 == *end) || (':' == *end) || ('.' == *end) ){
                         struct fieldDescription_t *field = 0 ;
 			unsigned start, count ;
-			if ((':' == *end) || ('.' == *end)) {
-				unsigned start, count ;
-				if (parseBits(end+1,start,count)) {
-					printf("%s: %u..%u\n", __func__, start,start+count-1);
-					field = new struct fieldDescription_t ;
-					field->name = end+1 ;
-					field->startbit = start ;
-					field->bitcount = count ;
-					field->next = 0 ;
-				}
-			}
 			struct reglist_t *out = 0 ;
 			struct reglist_t const *defs = registerDefs();
 			unsigned const nameLen = strlen(regname);
@@ -428,13 +420,19 @@ static struct reglist_t const *parseRegisterSpec(char const *regname)
 				defs = defs->next ;
 			}
 
+			if (':' == *end) {
+				unsigned start, count ;
+				if (parseBits(end+1,start,count)) {
+					field = new struct fieldDescription_t ;
+					field->name = end+1 ;
+					field->startbit = start ;
+					field->bitcount = count ;
+					field->next = 0 ;
+				}
+			}
 			struct fieldDescription_t *fields = 0 ;
 			unsigned width = 4 ;
-			if( ':' == *end ){
-				fields = parseFields(0,end+1);
-				if( !fields )
-					return 0 ;
-			} else if( '.' == *end ){
+			if( '.' == *end ){
 				char widthchar=tolower(end[1]);
 				if ('w' == widthchar) {
 					width = 2 ;
