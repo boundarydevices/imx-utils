@@ -2230,6 +2230,8 @@ UART2_ONEMS                                                     0X7000C0B0.W
 UART2_UTS                                                       0X7000C0B4.W
 IOMUXC_SW_MUX_CTL_PAD_EIM_D16                                   0X73FA805C
 	:fs124/
+IOMUXC_SW_MUX_CTL_PAD_EIM_D17                                   0X73FA8060
+	:fs124/
 IOMUXC_SW_MUX_CTL_PAD_EIM_D19                                   0X73FA8068
 IOMUXC_SW_MUX_CTL_PAD_EIM_D24                                   0X73FA807C
 	:fs124/
