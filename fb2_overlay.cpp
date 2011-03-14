@@ -33,6 +33,7 @@
 fb2_overlay_t::fb2_overlay_t(unsigned outx, unsigned outy,
                              unsigned outw, unsigned outh,
                              unsigned transparency, 
+			     unsigned color_key,
                              unsigned long outformat,
 			     unsigned which_display )
 : fd_(open(DEVNAME,O_RDWR|O_NONBLOCK))
@@ -88,8 +89,8 @@ fb2_overlay_t::fb2_overlay_t(unsigned outx, unsigned outy,
                                 return ;
                         }
                         struct mxcfb_color_key key;       
-                        key.enable = 0;
-                        key.color_key = 0x00000000; // Black
+                        key.enable = 0xFFFF >= color_key ;
+                        key.color_key = color_key;
                         if (ioctl(fd_,MXCFB_SET_CLR_KEY, &key) <0) {
                                 perror("MXCFB_SET_CLR_KEY error!");
                                 ::close(fd_);

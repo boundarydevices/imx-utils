@@ -355,6 +355,9 @@ int main( int argc, char const **argv ) {
 
 	cameraParams_t params(argc,argv);
 	params.dump();
+	unsigned color_key ;
+	if (!params.getPreviewColorKey(color_key))
+		color_key = 0xFFFFFF ;
 
         printf( "format %s\n", fourcc_str(params.getCameraFourcc()));
         fb2_overlay_t overlay(params.getPreviewX(),
@@ -362,6 +365,7 @@ int main( int argc, char const **argv ) {
 			      params.getPreviewWidth(),
 			      params.getPreviewHeight(),
 			      params.getPreviewTransparency(),
+			      color_key,
 			      params.getCameraFourcc());
         if ( overlay.isOpen() ) {
                 printf( "overlay opened successfully: %p/%u\n", overlay.getMem(), overlay.getMemSize() );

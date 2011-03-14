@@ -31,6 +31,7 @@ public:
                      unsigned outx, unsigned outy,
                      unsigned outw, unsigned outh,
                      unsigned transparency,  	// 0(transparent)..255(opaque) or NO_TRANSPARENCY
+		     unsigned color_key,	// > 0xFFFF means none
                      unsigned long outfmt,	// fourcc
 		     unsigned which_display=0 );// /dev/fbX
         ~fb2_overlay_t( void );

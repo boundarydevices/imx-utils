@@ -37,6 +37,7 @@ public:
 	unsigned getPreviewFourcc(void) const { return fourcc ; }
 	unsigned getPreviewTransparency(void) const { return transparency ; }
 	char const *getPreviewDeviceName(void) const { return cameraDevName ; }
+	bool getPreviewColorKey(unsigned &rgb16) const { rgb16=color_key ; return 0xFFFF >= color_key ; }
 
 	int getSaveFrameNumber(void) const { return saveFrame ; }
 	int getIterations(void) const { return iterations ; }
@@ -57,6 +58,7 @@ private:
 	unsigned outwidth ;
 	unsigned outheight ;
 	unsigned transparency ;
+	unsigned color_key ;
 	char const *cameraDevName ;
 	char const *previewDevName ;
 	int saveFrame ;

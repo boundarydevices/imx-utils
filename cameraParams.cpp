@@ -51,6 +51,7 @@ cameraParams_t::cameraParams_t( int &argc, char const **&argv )
 , outwidth(480)
 , outheight(272)
 , transparency(0)
+, color_key(0xFFFFFFFF)
 , cameraDevName("/dev/video0")
 , previewDevName("/dev/video16")
 , saveFrame(-1)
@@ -114,6 +115,9 @@ cameraParams_t::cameraParams_t( int &argc, char const **&argv )
 			else if ( 'y' == cmdchar ) {
 				y = strtoul(param+1,0,0);
 			}
+			else if ( 'k' == cmdchar ) {
+				color_key = strtoul(param+1,0,0);
+			}
 			else if ( 't' == cmdchar ) {
 				transparency = strtoul(param+1,0,0);
 			}
@@ -155,6 +159,7 @@ cameraParams_t::cameraParams_t( int &argc, char const **&argv )
 					"\t-ow480        - set preview width to 480\n"
 					"\t-oh272        - set preview height to 272\n"
 					"\t-t128         - set transparency 0(opaque) to 255(transparent)\n"
+					"\t-k0x0000      - set color key to RGB16\n"
 					"\t-b10.0.0.1:2020 - set broadcast target\n"
 					"\t-rX           - set rotation to X. Choices are:\n"
 					"                      v   - flip vertical\n"
