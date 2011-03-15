@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "fourcc.h"
+#include "imx_vpu.h"
+#include "imx_mjpeg_encoder.h"
 
 #define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
 
@@ -113,7 +115,6 @@ static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
 {
         trimCtrl(cmd);
         stringSplit_t split(cmd);
-        printf( "%s: %u parts\n", cmd, split.getCount() );
         if ( 0 < split.getCount() ) {
                 switch (tolower(split.getPtr(0)[0])) {
                         case 'c': {
@@ -352,6 +353,8 @@ static void phys_to_fb2
 }
 
 int main( int argc, char const **argv ) {
+        vpu_t vpu ;
+        mjpeg_encoder_t *encoder = 0 ;
 
 	cameraParams_t params(argc,argv);
 	params.dump();
@@ -395,7 +398,27 @@ int main( int argc, char const **argv ) {
 								if (0 == saveJPEG) {
 									fwrite(camera_frame,1,camera.imgSize(),fOut);
 								} else {
-									printf( "save JPEG data here\n" );
+									if (0 == encoder) {
+										encoder = new mjpeg_encoder_t(
+												vpu,
+												params.getCameraWidth(),
+												params.getCameraHeight(),
+												params.getCameraFourcc(),
+												camera.getFd(),
+												camera.numBuffers(),
+												camera.getBuffers()
+										);
+									}
+									if (encoder && encoder->initialized()) {
+										void const *outData ;
+										unsigned    outLength ;
+										if( encoder->encode(index, outData,outLength) ){
+											fwrite(outData,1,outLength,fOut);
+											printf( "JPEG data saved\n" );
+										} else
+											perror( "encode error");
+									} else
+										perror( "invalid MJPEG encoder\n");
 								}
 								fclose(fOut);
 								printf("done\n");

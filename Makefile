@@ -7,7 +7,7 @@ LD		:= ${ARCH}g++
 AR		:= ${ARCH}ar
 RANLIB		:= ${ARCH}ranlib
 STRIP		:= ${ARCH}strip
-
+CXXFLAGS	?= -I${HOME}/ltib/rootfs/usr/include -L${HOME}/ltib/rootfs/usr/lib
 VERSION := $(shell ./makeVersion.sh)
 
 showversion:
@@ -15,7 +15,7 @@ showversion:
 
 INCS		:= -I${HOME}/linux-bd/include
 
-LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp
+LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp
 LIBRARY_OBJS	:= $(addsuffix .o,$(basename ${LIBRARY_SRCS}))
 LIBRARY		:= libimx-camera.a
 LIBRARY_REF	:= -L./ -limx-camera
@@ -25,7 +25,7 @@ ${LIBRARY}: ${LIBRARY_OBJS}
 	@$(RANLIB) $(LIBRARY)
 
 camera_to_fb2: camera_to_fb2.cpp ${LIBRARY} 
-	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
+	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -lvpu -lpthread -o $@
 
 devregs: devregs.cpp ${LIBRARY} 
 	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
