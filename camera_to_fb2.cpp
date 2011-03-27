@@ -15,8 +15,11 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "fourcc.h"
+
+#ifndef ANDROID
 #include "imx_vpu.h"
 #include "imx_mjpeg_encoder.h"
+#endif
 
 #define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
 
@@ -353,9 +356,10 @@ static void phys_to_fb2
 }
 
 int main( int argc, char const **argv ) {
-        vpu_t vpu ;
+#ifndef ANDROID
+	vpu_t vpu ;
         mjpeg_encoder_t *encoder = 0 ;
-
+#endif
 	cameraParams_t params(argc,argv);
 	params.dump();
 	unsigned color_key ;
@@ -398,6 +402,7 @@ int main( int argc, char const **argv ) {
 								if (0 == saveJPEG) {
 									fwrite(camera_frame,1,camera.imgSize(),fOut);
 								} else {
+#ifndef ANDROID
 									if (0 == encoder) {
 										encoder = new mjpeg_encoder_t(
 												vpu,
@@ -418,6 +423,7 @@ int main( int argc, char const **argv ) {
 										} else
 											perror( "encode error");
 									} else
+#endif
 										perror( "invalid MJPEG encoder\n");
 								}
 								fclose(fOut);
