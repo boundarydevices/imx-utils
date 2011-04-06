@@ -1,7 +1,9 @@
+
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_C_INCLUDES += $(LOCAL_PATH)
 LOCAL_SRC_FILES := camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp hexDump.cpp memcopy.S
 LOCAL_MODULE := libbdhw
@@ -9,6 +11,7 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_SRC_FILES:=devregs.cpp
 LOCAL_MODULE:=devregs
 LOCAL_CPPFLAGS += -DANDROID
@@ -18,6 +21,7 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := camera_to_fb2
 LOCAL_SRC_FILES := camera_to_fb2.cpp
 LOCAL_C_INCLUDES += $(LOCAL_PATH)
@@ -27,6 +31,7 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := fb2_overlay
 LOCAL_SRC_FILES := fb2_overlay.cpp
 LOCAL_CPPFLAGS += -DOVERLAY_MODULETEST
@@ -37,9 +42,30 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := ov5640
 LOCAL_MODULE_CLASS := ETC
 LOCAL_MODULE_PATH := $(TARGET_OUT)/etc/firmware
 LOCAL_SRC_FILES := $(LOCAL_MODULE)
 include $(BUILD_PREBUILT)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE := flipper
+LOCAL_SRC_FILES := flipper.cpp
+LOCAL_C_INCLUDES += $(LOCAL_PATH)
+LOCAL_SHARED_LIBRARIES := libcutils libc
+LOCAL_STATIC_LIBRARIES := libbdhw
+include $(BUILD_EXECUTABLE)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE := fbSet
+LOCAL_SRC_FILES := fbSet.cpp
+LOCAL_C_INCLUDES += $(LOCAL_PATH)
+LOCAL_SHARED_LIBRARIES := libcutils libc
+LOCAL_STATIC_LIBRARIES := libbdhw
+include $(BUILD_EXECUTABLE)
 
