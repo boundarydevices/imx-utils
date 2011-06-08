@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "fourcc.h"
+#include <signal.h>
 
 #ifndef ANDROID
 #include "imx_vpu.h"
@@ -112,7 +113,7 @@ static void trimCtrl(char *buf){
 #include <linux/fb.h>
 #include <sys/ioctl.h>
 
-static bool doExit = false ;
+static bool volatile doExit = false ;
 
 static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
 {
@@ -355,6 +356,13 @@ static void phys_to_fb2
 	}
 }
 
+static void ctrlcHandler( int signo )
+{
+	printf( "<ctrl-c>(%d)\r\n", signo );
+	doExit = true ;
+}
+
+
 int main( int argc, char const **argv ) {
 #ifndef ANDROID
 	vpu_t vpu ;
@@ -366,6 +374,9 @@ int main( int argc, char const **argv ) {
 	if (!params.getPreviewColorKey(color_key))
 		color_key = 0xFFFFFF ;
 
+	signal( SIGINT, ctrlcHandler );
+	signal( SIGHUP, ctrlcHandler );
+	printf("installed int handler\n");
         printf( "format %s\n", fourcc_str(params.getCameraFourcc()));
         fb2_overlay_t overlay(params.getPreviewX(),
 			      params.getPreviewY(),
@@ -428,6 +439,7 @@ int main( int argc, char const **argv ) {
 								}
 								fclose(fOut);
 								printf("done\n");
+								fflush(stdout);
 							} else
 								perror("/tmp/camera.out" );
 							fileName = 0 ;
@@ -437,7 +449,7 @@ int main( int argc, char const **argv ) {
 						phys_to_fb2(camera_frame,camera.imgSize(),overlay,params);
                                                 camera.returnFrame(camera_frame,index);
                                         }
-                                        if (1){ // isatty(0) ) {
+//                                        if (isatty(0)) {
                                                 struct pollfd fds[1];
                                                 fds[0].fd = fileno(stdin); // STDIN
                                                 fds[0].events = POLLIN|POLLERR;
@@ -461,7 +473,7 @@ int main( int argc, char const **argv ) {
                                                                 break;
                                                         }
                                                 }
-                                        }
+//                                        }
                                 }
                         }
                         else
