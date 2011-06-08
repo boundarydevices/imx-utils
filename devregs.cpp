@@ -524,9 +524,11 @@ static void showReg(struct reglist_t const *reg)
 		fprintf(stderr, "Unsupported width in register %s\n", reg->reg->name);
 		return ;
 	}
+	fflush(stdout);
 	struct fieldDescription_t *f = reg->fields ;
 	while(f){
 		printf( "\t%-16s\t%2u-%2u\t=0x%x\n", f->name, f->startbit, f->startbit+f->bitcount-1, fieldVal(f,rv) );
+		fflush(stdout);
 		f=f->next ;
 	}
 }
