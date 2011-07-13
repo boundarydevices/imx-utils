@@ -395,6 +395,7 @@ IPU_DISP_GEN                                                    0X5E0000C4
 	:DP2_DOUBLE_FLOW:2
 	:DI1_DUAL_MODE:1
 	:DI0_DUAL_MODE:0
+IPU_DISP_ALT1                                                   0X5E0000C8
 IPU_MEM_RST                                                     0X5E0000DC
 	:RST_MEM_START:31
 	:RST_MEM_EN:0-22
