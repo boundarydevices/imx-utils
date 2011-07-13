@@ -25,7 +25,7 @@
 #include <linux/videodev2.h>
 #include <linux/mxcfb.h>
 
-#define IPU_CPMEM_REG_BASE	0x1F000000
+#define IPU_CPMEM_REG_BASE	0X5F000000 // 0x1F000000 for MX53
 #define PAGE_SIZE 4096
 
 struct ipu_ch_param_word {
@@ -39,7 +39,7 @@ struct ipu_ch_param {
 
 #define ARRAYSIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
 
-#define IPU_CM_REG_BASE		0x1E000000
+#define IPU_CM_REG_BASE		0x5E000000	// 0x1E000000 for MX53
 
 static unsigned const buf_offsets[] = {
     0x268
