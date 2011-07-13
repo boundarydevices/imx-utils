@@ -121,6 +121,7 @@ fb2_overlay_t::fb2_overlay_t(unsigned outx, unsigned outy,
 					perror("MXCFB_GET_DIFMT error!");
 				else
 					printf( "MXCFB_GET_DIFMT: %x\n", value );
+				memset(mem_, 0x80, fixed_info.smem_len);
                         }
                         else
                                 perror( "VSCREENINFO" );
