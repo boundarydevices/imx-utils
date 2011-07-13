@@ -15,7 +15,7 @@ showversion:
 
 INCS		:= -I${HOME}/linux-bd/include
 
-LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp
+LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp physMem.cpp
 LIBRARY_OBJS	:= $(addsuffix .o,$(basename ${LIBRARY_SRCS}))
 LIBRARY		:= libimx-camera.a
 LIBRARY_REF	:= -L./ -limx-camera
@@ -31,6 +31,9 @@ devregs: devregs.cpp ${LIBRARY}
 	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
 
 fb2_overlay: fb2_overlay.cpp ${LIBRARY} 
+	${CXX} ${CXXFLAGS} -DOVERLAY_MODULETEST ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
+
+ipu_bufs: ipu_bufs.cpp ${LIBRARY} 
 	${CXX} ${CXXFLAGS} -DOVERLAY_MODULETEST ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
 
 EXES		:= camera_to_fb2 devregs
