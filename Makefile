@@ -36,6 +36,10 @@ fb2_overlay: fb2_overlay.cpp ${LIBRARY}
 ipu_bufs: ipu_bufs.cpp ${LIBRARY} 
 	${CXX} ${CXXFLAGS} -DOVERLAY_MODULETEST ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
 
+battery_test: battery_test.c
+	${CC} ${CFLAGS} ${INCS} ${DEFS} $< -o $@ -lm
+
+
 EXES		:= camera_to_fb2 devregs
 
 %.o : %.cpp

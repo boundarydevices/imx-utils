@@ -20,6 +20,9 @@
 #include <time.h>
 #include <signal.h>
 #include <sys/time.h>
+#ifndef ANDROID
+#include <asm/types.h>
+#endif
 #include "spidev.h"
 
 #define CHARGE_BAT1	0x80
