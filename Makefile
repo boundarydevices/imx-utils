@@ -39,6 +39,9 @@ ipu_bufs: ipu_bufs.cpp ${LIBRARY}
 battery_test: battery_test.c
 	${CC} ${CFLAGS} ${INCS} ${DEFS} $< -o $@ -lm
 
+pmic: pmic.cpp
+	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< -o $@
+
 
 EXES		:= camera_to_fb2 devregs
 
