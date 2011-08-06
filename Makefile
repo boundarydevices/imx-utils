@@ -33,8 +33,11 @@ devregs: devregs.cpp ${LIBRARY}
 fb2_overlay: fb2_overlay.cpp ${LIBRARY} 
 	${CXX} ${CXXFLAGS} -DOVERLAY_MODULETEST ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
 
-ipu_bufs: ipu_bufs.cpp ${LIBRARY} 
-	${CXX} ${CXXFLAGS} -DOVERLAY_MODULETEST ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
+ipu_bufs_mx53: ipu_bufs.cpp ${LIBRARY}
+	${CXX} ${CXXFLAGS} -DMX53 ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
+
+ipu_bufs_mx51: ipu_bufs.cpp ${LIBRARY}
+	${CXX} ${CXXFLAGS} -DMX51 ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
 
 battery_test: battery_test.c
 	${CC} ${CFLAGS} ${INCS} ${DEFS} $< -o $@ -lm

@@ -9,3 +9,5 @@ version.h
 pmic
 ipu_bufs
 battery_test
+ipu_bufs_mx51
+ipu_bufs_mx53

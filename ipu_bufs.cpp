@@ -25,7 +25,16 @@
 #include <linux/videodev2.h>
 #include <linux/mxcfb.h>
 
-#define IPU_CPMEM_REG_BASE	0X5F000000 // 0x1F000000 for MX53
+#if defined (MX51)
+#define IPU_CPMEM_REG_BASE	0X5F000000
+#define IPU_CM_REG_BASE		0x5E000000
+#elif defined (MX53)
+#define IPU_CPMEM_REG_BASE	0x1F000000
+#define IPU_CM_REG_BASE		0x1E000000
+#else
+#error need to define MX51 or MX53
+#endif
+
 #define PAGE_SIZE 4096
 
 struct ipu_ch_param_word {
@@ -39,7 +48,6 @@ struct ipu_ch_param {
 
 #define ARRAYSIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
 
-#define IPU_CM_REG_BASE		0x5E000000	// 0x1E000000 for MX53
 
 static unsigned const buf_offsets[] = {
     0x268
@@ -52,20 +60,20 @@ static void print_field(
 	unsigned startbit,
 	unsigned numbits)
 {
-	unsigned value ; 
-	unsigned wordnum=(startbit/32); 
-	if( wordnum == ((startbit+numbits-1)/32) ) { 
-		unsigned shifted = (param_word.data[wordnum] >> (startbit & 31)); 
-		value = shifted & ((1<<numbits)-1) ; 
-	} /* fits in one word */	
-	else { 
-		unsigned lowbits = 32-(startbit&31); 
-		unsigned low = (param_word.data[wordnum] >> (startbit & 31)) & ((1<<lowbits)-1) ; 
-		unsigned highbits = numbits-lowbits ; 
-		unsigned high = param_word.data[wordnum+1] & ((1<<highbits)-1); 
-		value = low | (high << lowbits); 
-	} 
-	printf( "%s %3u:%-2u\t == 0x%08x\n", name, startbit, numbits, value ); 
+	unsigned value ;
+	unsigned wordnum=(startbit/32);
+	if( wordnum == ((startbit+numbits-1)/32) ) {
+		unsigned shifted = (param_word.data[wordnum] >> (startbit & 31));
+		value = shifted & ((1<<numbits)-1) ;
+	} /* fits in one word */
+	else {
+		unsigned lowbits = 32-(startbit&31);
+		unsigned low = (param_word.data[wordnum] >> (startbit & 31)) & ((1<<lowbits)-1) ;
+		unsigned highbits = numbits-lowbits ;
+		unsigned high = param_word.data[wordnum+1] & ((1<<highbits)-1);
+		value = low | (high << lowbits);
+	}
+	printf( "%s %3u:%-2u\t == 0x%08x\n", name, startbit, numbits, value );
 }
 
 struct bitfield {
@@ -85,8 +93,8 @@ static void set_field(
 		fprintf(stderr, "Error: range of %s is [0..0x%x]\n", field.name, max );
 		return ;
 	}
-	unsigned wordnum=(field.startbit/32); 
-	if( wordnum == ((field.startbit+field.numbits-1)/32) ) { 
+	unsigned wordnum=(field.startbit/32);
+	if( wordnum == ((field.startbit+field.numbits-1)/32) ) {
 		unsigned shifted = value << (field.startbit & 31);
 		unsigned mask = ~(max << (field.startbit&31));
 		unsigned oldval = param_word.data[wordnum] & ~mask ;
@@ -95,8 +103,8 @@ static void set_field(
                         param_word.data[wordnum] = (param_word.data[wordnum]&mask) | shifted ;
 			printf( "value changed\n");
 		}
-	} /* fits in one word */	
-	else { 
+	} /* fits in one word */
+	else {
 		printf( "no multi-word support yet\n" );
 		unsigned oldlow = param_word.data[wordnum];
 		unsigned lowbits = 32-(field.startbit&31);
@@ -110,7 +118,7 @@ static void set_field(
 		printf( "oldhigh == 0x%08x\nnewval == 0x%08x\n", oldhigh, newhigh);
 		param_word.data[wordnum] = newlow ;
 		param_word.data[wordnum+1] = newhigh ;
-	} 
+	}
 }
 
 static struct bitfield const fields[] = {
@@ -162,7 +170,7 @@ int main(int argc, char **argv )
 	perror("cpmem");
 	return -1 ;
 	}
-	
+
 	physMem_t cmmem(IPU_CM_REG_BASE, PAGE_SIZE);
 	if( !cmmem.worked() ){
 	perror("cmmem");
@@ -195,7 +203,7 @@ int main(int argc, char **argv )
 		(param.word[1].data[0] & ((1<<29)-1))*8,
 		((param.word[1].data[0] >> 29)|(param.word[1].data[1]<<3))*8
 	    };
-	    
+
 	    unsigned curbuf_long = chan/32 ;
 	    unsigned curbuf_bit = chan%31 ;
 	    unsigned curbuf = (cur_buf_base[curbuf_long] >> curbuf_bit)&1 ;
@@ -204,7 +212,7 @@ int main(int argc, char **argv )
 		unsigned char bits = rdy_base[buf_offsets[i]+chan/8];
 		unsigned char mask = 1<<(chan&7);
 		bool ready = 0 != (bits & mask);
-		printf( "ipu_buf[chan %u][%d] == 0x%08lx %s %s\n", chan, i, addrs[i], 
+		printf( "ipu_buf[chan %u][%d] == 0x%08lx %s %s\n", chan, i, addrs[i],
 				ready ? "READY" : "NOT READY",
 				(i==curbuf) ? "<-- current" : "");
 	    }
