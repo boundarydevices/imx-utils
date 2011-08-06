@@ -112,10 +112,11 @@ static void trimCtrl(char *buf){
 
 #include <linux/fb.h>
 #include <sys/ioctl.h>
+#include "cameraParams.h"
 
 static bool volatile doExit = false ;
 
-static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
+static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &params)
 {
         trimCtrl(cmd);
         stringSplit_t split(cmd);
@@ -128,10 +129,10 @@ static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
                         }
                         case 'f': {
                                         struct fb_var_screeninfo variable_info;
-                                        int err = ioctl( fd, FBIOGET_VSCREENINFO, &variable_info );
+                                        int err = ioctl( overlay->getFd(), FBIOGET_VSCREENINFO, &variable_info );
                                         if ( 0 == err ) {
                                                 variable_info.yoffset = (0 != variable_info.yoffset) ? 0 : variable_info.yres ;
-                                                err = ioctl( fd, FBIOPAN_DISPLAY, &variable_info );
+                                                err = ioctl( overlay->getFd(), FBIOPAN_DISPLAY, &variable_info );
                                                 if ( 0 == err ) {
                                                         printf( "flipped to offset %d\n", variable_info.yoffset );
                                                 }
@@ -146,22 +147,22 @@ static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
                                         if ( 1 < split.getCount()) {
                                                 unsigned yval = strtoul(split.getPtr(1),0,0);
                                                 unsigned start = 0 ;
-                                                unsigned end = fbmemsize ;
+                                                unsigned end = overlay->getMemSize() ;
                                                 if ( 2 < split.getCount() ) {
-                                                        if ( !getFraction(split.getPtr(2),fbmemsize,start) ) {
+                                                        if ( !getFraction(split.getPtr(2),overlay->getMemSize(),start) ) {
                                                                 fprintf(stderr, "Invalid fraction %s\n", split.getPtr(2));
                                                                 break;
                                                         }
                                                         if ( 3 < split.getCount() ) {
-                                                                if ( !getFraction(split.getPtr(3),fbmemsize,end) ) {
+                                                                if ( !getFraction(split.getPtr(3),overlay->getMemSize(),end) ) {
                                                                         fprintf(stderr, "Invalid fraction %s\n", split.getPtr(3));
                                                                         break;
                                                                 }
                                                         }
                                                 }
-                                                if ( (end > start) && (end <= fbmemsize) ) {
-                                                        printf( "set y buffer [%u..%u] out of %u to %u (0x%x) here\n", start, end, fbmemsize, yval, yval );
-                                                        memset(((char *)fbmem)+start,yval,end-start);
+                                                if ( (end > start) && (end <= overlay->getMemSize()) ) {
+                                                        printf( "set y buffer [%u..%u] out of %u to %u (0x%x) here\n", start, end, overlay->getMemSize(), yval, yval );
+                                                        memset(((char *)overlay->getMem())+start,yval,end-start);
                                                 }
                                         }
                                         else
@@ -183,8 +184,23 @@ static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
 				break;
 			}
                         case 'x': {
-				close(fd);
+				close(overlay->getFd());
 				doExit = true ;
+				break;
+			}
+                        case 'r': {
+				delete overlay ;
+				unsigned color_key ;
+				if (!params.getPreviewColorKey(color_key))
+					color_key = 0xFFFFFF ;
+				overlay = new fb2_overlay_t
+						(params.getPreviewX(),
+						 params.getPreviewY(),
+						 params.getPreviewWidth(),
+						 params.getPreviewHeight(),
+						 params.getPreviewTransparency(),
+						 color_key,
+						 params.getCameraFourcc());
 				break;
 			}
                         case '?': {
@@ -194,6 +210,7 @@ static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
                                                 "\ty yval [start [end]] - set y buffer(s) to specified value\n" 
                                                 "\ts filename - save raw data to filename\n" 
                                                 "\tj filename - save JPEG data to filename\n" 
+                                                "\tr 	- reopen display\n"
                                                 "\n"
                                                 "most start and end positions can be specified in fractions.\n" 
                                                 "	/2 or 1/2 is halfway into buffer or memory\n" 
@@ -206,7 +223,6 @@ static void process_command(char *cmd,int fd,void *fbmem,unsigned fbmemsize)
 
 #include <sys/poll.h>
 #include "tickMs.h"
-#include "cameraParams.h"
 #include <assert.h>
 
 class yuvAccess_t {
@@ -378,15 +394,16 @@ int main( int argc, char const **argv ) {
 	signal( SIGHUP, ctrlcHandler );
 	printf("installed int handler\n");
         printf( "format %s\n", fourcc_str(params.getCameraFourcc()));
-        fb2_overlay_t overlay(params.getPreviewX(),
-			      params.getPreviewY(),
-			      params.getPreviewWidth(),
-			      params.getPreviewHeight(),
-			      params.getPreviewTransparency(),
-			      color_key,
-			      params.getCameraFourcc());
-        if ( overlay.isOpen() ) {
-                printf( "overlay opened successfully: %p/%u\n", overlay.getMem(), overlay.getMemSize() );
+        fb2_overlay_t *overlay = new fb2_overlay_t
+			(params.getPreviewX(),
+			 params.getPreviewY(),
+			 params.getPreviewWidth(),
+			 params.getPreviewHeight(),
+			 params.getPreviewTransparency(),
+			 color_key,
+			 params.getCameraFourcc());
+        if ( overlay->isOpen() ) {
+                printf( "overlay opened successfully: %p/%u\n", overlay->getMem(), overlay->getMemSize() );
                 camera_t camera("/dev/video0",params.getCameraWidth(),
 				params.getCameraHeight(),params.getCameraFPS(),
 				params.getCameraFourcc());
@@ -394,7 +411,7 @@ int main( int argc, char const **argv ) {
                         printf( "camera opened successfully\n");
                         if ( camera.startCapture() ) {
                                 printf( "camera streaming started successfully\n");
-                                printf( "cameraSize %u, overlaySize %u\n", camera.imgSize(), overlay.getMemSize() );
+                                printf( "cameraSize %u, overlaySize %u\n", camera.imgSize(), overlay->getMemSize() );
                                 unsigned long frameCount = 0 ;
                                 unsigned totalFrames = 0 ;
                                 unsigned outDrops = 0 ;
@@ -446,7 +463,7 @@ int main( int argc, char const **argv ) {
 						}
                                                 ++totalFrames ;
                                                 ++frameCount ;
-						phys_to_fb2(camera_frame,camera.imgSize(),overlay,params);
+						phys_to_fb2(camera_frame,camera.imgSize(),*overlay,params);
                                                 camera.returnFrame(camera_frame,index);
                                         }
 //                                        if (isatty(0)) {
@@ -458,7 +475,7 @@ int main( int argc, char const **argv ) {
                                                         char inBuf[512];
                                                         if ( fgets(inBuf,sizeof(inBuf),stdin) ) {
                                                                 trimCtrl(inBuf);
-                                                                process_command(inBuf, overlay.getFd(), overlay.getMem(), overlay.getMemSize());
+                                                                process_command(inBuf, overlay,params);
                                                                 long long elapsed = tickMs()-start;
                                                                 if ( 0LL == elapsed )
                                                                         elapsed = 1 ;
