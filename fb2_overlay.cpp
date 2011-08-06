@@ -67,7 +67,22 @@ fb2_overlay_t::fb2_overlay_t(unsigned outx, unsigned outy,
                                         perror( "FBIOPUT_VSCREENINFO");
                                         close();
                                         return ;
-                                }
+                                } else {
+					::close(fd_);
+					fd_ = open(DEVNAME,O_RDWR|O_NONBLOCK);
+					if (0 >= fd_) {
+						perror("open2");
+						return ;
+					}
+					printf("re-opened device\n");
+                                        err = ioctl( fd_, FBIOGET_FSCREENINFO, &fixed_info);
+					if (0 != err) {
+						perror("FBIOGET_FSCREENINFO");
+						close();
+						return ;
+					}
+					printf("re-read fixed info\n");
+				}
                         } // need to change output size
                         struct mxcfb_pos pos ;
                         pos.x = outx ;
