@@ -6,3 +6,6 @@ version.h
 fb2_overlay
 devregs
 version.h
+pmic
+ipu_bufs
+battery_test
