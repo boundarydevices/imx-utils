@@ -501,6 +501,7 @@ int main( int argc, char const **argv ) {
         }
         else
                 fprintf(stderr, "Error opening v4l output\n" );
+	delete overlay ;
         return 0 ;
 }
 
