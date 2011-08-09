@@ -74,7 +74,6 @@ fb2_overlay_t::fb2_overlay_t(unsigned outx, unsigned outy,
 						perror("open2");
 						return ;
 					}
-                                        fcntl( fd_, F_SETFD, FD_CLOEXEC );
 					printf("re-opened device\n");
                                         err = ioctl( fd_, FBIOGET_FSCREENINFO, &fixed_info);
 					if (0 != err) {
