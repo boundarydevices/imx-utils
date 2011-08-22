@@ -406,7 +406,8 @@ int main( int argc, char const **argv ) {
                 printf( "overlay opened successfully: %p/%u\n", overlay->getMem(), overlay->getMemSize() );
                 camera_t camera("/dev/video0",params.getCameraWidth(),
 				params.getCameraHeight(),params.getCameraFPS(),
-				params.getCameraFourcc());
+				params.getCameraFourcc(),
+				params.getCameraRotation());
                 if (camera.isOpen()) {
                         printf( "camera opened successfully\n");
                         if ( camera.startCapture() ) {
