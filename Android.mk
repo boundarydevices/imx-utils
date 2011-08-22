@@ -83,7 +83,19 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE_TAGS := eng
-LOCAL_MODULE := ipu_bufs
+LOCAL_MODULE := ipu_bufs_mx53
+LOCAL_CPPFLAGS += -DMX53
+LOCAL_SRC_FILES := ipu_bufs.cpp physMem.cpp
+LOCAL_C_INCLUDES += $(LOCAL_PATH)
+LOCAL_SHARED_LIBRARIES := libcutils libc
+LOCAL_STATIC_LIBRARIES := libbdhw
+include $(BUILD_EXECUTABLE)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE := ipu_bufs_mx51
+LOCAL_CPPFLAGS += -DMX51
 LOCAL_SRC_FILES := ipu_bufs.cpp physMem.cpp
 LOCAL_C_INCLUDES += $(LOCAL_PATH)
 LOCAL_SHARED_LIBRARIES := libcutils libc
