@@ -534,20 +534,10 @@ bool mjpeg_encoder_t::get_bufs( unsigned index, unsigned char *&y, unsigned char
 	return true ;
 }
 
-static void clampY(unsigned char *y,unsigned numbytes){
-	while (numbytes--) {
-		unsigned yval = *y ;
-		*y++ = 16+((220*yval)>>8);
-	}
-}
-
 bool mjpeg_encoder_t::encode(unsigned index, void const *&outData, unsigned &outLength)
 {
 	EncParam  enc_param = {0};
-	unsigned char *y, *u, *v ;
-	if (get_bufs(index,y,u,v)) {
-		clampY(y,uoffs);
-	}
+
 	enc_param.sourceFrame = &fb[index];
 	enc_param.quantParam = 23;
 	enc_param.forceIPicture = 0;
