@@ -254,7 +254,6 @@ bail:
 }
 
 camera_t::~camera_t(void) {
-	ERRMSG( "in camera destructor");
 	if ( buffers_ ) {
 		while ( 0 < n_buffers_ ) {
 			munmap(buffers_[n_buffers_-1],buffer_length_);
