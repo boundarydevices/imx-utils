@@ -15,7 +15,7 @@ showversion:
 
 INCS		:= -I${HOME}/linux-bd/include
 
-LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp physMem.cpp
+LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp physMem.cpp hexDump.cpp
 LIBRARY_OBJS	:= $(addsuffix .o,$(basename ${LIBRARY_SRCS}))
 LIBRARY		:= libimx-camera.a
 LIBRARY_REF	:= -L./ -limx-camera
@@ -45,6 +45,8 @@ battery_test: battery_test.c
 pmic: pmic.cpp
 	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< -o $@
 
+imx_h264_encoder: imx_h264_encoder.cpp ${LIBRARY}
+	${CXX} ${CXXFLAGS} -DMODULETEST=1 ${INCS} ${DEFS} $< -lvpu ${LIBRARY_REF} -lavformat -lavcodec -lavutil -lz -lbz2 -lpthread -o $@
 
 EXES		:= camera_to_fb2 devregs
 
