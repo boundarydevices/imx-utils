@@ -46,6 +46,7 @@ cameraParams_t::cameraParams_t( int &argc, char const **&argv )
 , rotation(camera_t::ROTATE_NONE)
 , fps(30)
 , fourcc(V4L2_PIX_FMT_YUV420)
+, gopSize(0)
 , x(0)
 , y(0)
 , outwidth(480)
@@ -89,6 +90,9 @@ cameraParams_t::cameraParams_t( int &argc, char const **&argv )
 			}
 			else if( 'f' == tolower(*param) ){
             			fps = strtol(param+1,0,0);
+			}
+			else if( 'g' == tolower(*param) ){
+				gopSize = strtol(param+1,0,0);
 			}
 			else if( '4' == *param ) {
                                 unsigned fcc ; 
@@ -154,6 +158,7 @@ cameraParams_t::cameraParams_t( int &argc, char const **&argv )
 					"\t-ih272        - set input height to 272\n"
 					"\t-f30          - set camera frames per second to 30\n"
 					"\t-4I420        - set camera fourcc to I420\n"
+					"\t-g5           - set Group of Pictures (GOP) size to 5\n"
 					"\t-x10          - set preview x position to 10\n"
 					"\t-y10          - set preview y position to 10\n"
 					"\t-ow480        - set preview width to 480\n"
@@ -191,6 +196,7 @@ void cameraParams_t::dump(void) const {
 		"	rotation == %u\n"
 		"	fps == %u\n"
 		"	fourcc == %s\n"
+		"	gopSize == %u\n"
 		"	x == %u\n"
 		"	y == %u\n"
 		"	outwidth == %u\n"
@@ -205,6 +211,7 @@ void cameraParams_t::dump(void) const {
 		, rotation
 		, fps
 		, fourcc_str(fourcc)
+		, gopSize
 		, x
 		, y
 		, outwidth

@@ -30,6 +30,8 @@ public:
 	unsigned getCameraFPS(void) const { return fps ; }
 	unsigned getCameraFourcc(void) const { return fourcc ; }
 
+	unsigned getGOP(void) const { return gopSize ; }
+
 	unsigned getPreviewX(void) const { return x ; }
 	unsigned getPreviewY(void) const { return y ; }
 	unsigned getPreviewWidth(void) const { return outwidth ; }
@@ -53,6 +55,7 @@ private:
 	camera_t::rotation_e rotation ;
 	unsigned fps ;
 	unsigned fourcc ;
+	unsigned gopSize ;
 	unsigned x ;
 	unsigned y ;
 	unsigned outwidth ;
