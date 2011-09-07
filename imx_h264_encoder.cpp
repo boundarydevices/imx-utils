@@ -26,6 +26,7 @@ h264_encoder_t::h264_encoder_t(
 	unsigned w,
 	unsigned h,
 	unsigned fourcc,
+	unsigned gopSize,
 	struct v4l2_buffer *v4lbuffers,
 	unsigned numBuffers,
 	unsigned char **cameraBuffers)
@@ -99,7 +100,7 @@ printf( "%s: sizes %u/%u: %u\n", __func__, ysize, uvsize, totalsize);
 	/*Note: Frame rate cannot be less than 15fps per H.263 spec */
 	encop.frameRateInfo = 30;
 	encop.bitRate = 0 ;
-	encop.gopSize = 1 ;
+	encop.gopSize = gopSize ;
 	encop.slicemode.sliceMode = 0;	/* 0: 1 slice per picture; 1: Multiple slices per picture */
 	encop.slicemode.sliceSizeMode = 0; /* 0: silceSize defined by bits; 1: sliceSize defined by MB number*/
 	encop.slicemode.sliceSize = 4000;  /* Size of a slice in bits or MB numbers */
@@ -405,6 +406,116 @@ static unsigned yvalue(unsigned i){
 	return (i%220)+16 ;
 }
 
+struct imgFile_t {
+	char 		 *name ;
+	unsigned 	  seconds ;
+	unsigned	  iterations ;
+	unsigned char 	 *yuvBytes ;
+	struct imgFile_t *next ;
+};
+
+static imgFile_t *parseImgFiles(int &argc, char const **&argv,unsigned totalsize) {
+        imgFile_t *rval = 0 ;
+	for (int arg = argc-1 ; arg > 1 ; arg--) {
+		char const *a = argv[arg];
+		char const *colon = strchr(a,':');
+		if (colon) {
+			unsigned seconds = strtoul(colon+1,0,0);
+			if (0 < seconds) {
+				unsigned len = colon-a ;
+				imgFile_t *img = new imgFile_t ;
+				img->name=strdup(a);
+				img->name[len] = '\0' ;
+				img->seconds = seconds ;
+				img->iterations = 0 ;
+				img->next = rval ;
+				FILE *fIn = fopen(img->name,"rb");
+				if (fIn) {
+					img->yuvBytes = new unsigned char [totalsize];
+					if (totalsize != (unsigned)fread(img->yuvBytes,1,totalsize,fIn)) {
+						perror(img->name);
+					}
+					rval = img ;
+					--argc ;
+					fclose(fIn);
+				} else {
+					perror(img->name);
+					break;
+				}
+			} else
+				fprintf (stderr, "%s: must be at least 1 second duration\n", a);
+		} else
+			break;
+	}
+
+	return rval ;
+}
+
+static bool fill_yuv(unsigned &iteration,cameraParams_t &params, imgFile_t *&images,unsigned char *yuv, unsigned ysize, unsigned uvsize){
+	if (images) {
+		if (0 == images->iterations) {
+			printf( "reading %s\n", images->name);
+		}
+		images->iterations++ ;
+		if (images->iterations <= (30*images->seconds)) {
+			memcpy(yuv,images->yuvBytes,ysize+(2*uvsize));
+			return true ;
+		}
+		images=images->next ;
+		if (images) {
+                        printf( "reading %s\n", images->name);
+			images->iterations = 1 ;
+			memcpy(yuv,images->yuvBytes,ysize+(2*uvsize));
+			return true ;
+		}
+		else
+			return false ;
+	} else {
+		unsigned frameCount = params.getIterations();
+		if (0 == frameCount) {
+			frameCount = NUMBUFFERS ;
+		}
+		if (iteration < frameCount) {
+			unsigned    yval = yvalue(iteration);
+			memset (yuv, yval,ysize);
+			memset (yuv+ysize,0x80,2*uvsize);
+			return true ;
+		}
+		else
+			return false ;
+	}
+}
+
+static void writeHeaders(h264_encoder_t &encoder,
+			 AVFormatContext *oc )
+{
+	void const *data ;
+	unsigned ps_len ;
+	if (encoder.getSPS(data,ps_len)) {
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		pkt.stream_index = 0 ;
+		pkt.data = (uint8_t *)data ;
+		pkt.size = ps_len ;
+		int ret = av_write_frame(oc,&pkt);
+		if (0 != ret) {
+			printf( "error %d writing %u bytes of SPS header\n", ret, ps_len);
+		}
+
+	}
+	if (encoder.getPPS(data,ps_len)) {
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		pkt.stream_index = 0 ;
+		pkt.data = (uint8_t *)data ;
+		pkt.size = ps_len ;
+		int ret = av_write_frame(oc,&pkt);
+		if (0 != ret) {
+			printf( "error %d writing %u bytes of SPS header\n", ret, ps_len);
+		}
+	}
+}
+
 int main (int argc, char const **argv) {
 	cameraParams_t params(argc,argv);
 	if (1 < argc) {
@@ -427,6 +538,12 @@ int main (int argc, char const **argv) {
 			unsigned totalsize;
 			if (fourccOffsets(params.getCameraFourcc(),params.getCameraWidth(),params.getCameraHeight(),
 					  ysize, yoffs, yadder, uvsize, uvrowdiv, uvcoldiv, uoffs,  voffs,  uvadder, totalsize)) {
+				imgFile_t *images = parseImgFiles(argc,argv,totalsize);
+                                imgFile_t *im = images ;
+				while (im) {
+					printf("%s: %u seconds\n", im->name, im->seconds);
+					im = im->next ;
+				}
 				printf("%s: %ux%u, total size %u\n",
 				       fourcc_str(params.getCameraFourcc()),
 				       params.getCameraWidth(),
@@ -457,6 +574,7 @@ int main (int argc, char const **argv) {
 						       params.getCameraWidth(),
 						       params.getCameraHeight(),
 						       params.getCameraFourcc(),
+						       params.getGOP(),
 						       v4lbuffers,
 						       NUMBUFFERS,
 						       buffers);
@@ -500,47 +618,17 @@ int main (int argc, char const **argv) {
 					printf("ocodec write_header: %p:%p/%p\n", oc->oformat ? oc->oformat->write_header : 0, outfmt, outfmt->write_header );
 					av_write_header(oc);
 
-					void const *data ;
-					unsigned ps_len ;
-					if (encoder.getSPS(data,ps_len)) {
-						printf( "have SPS data: %p/%u\n", data,ps_len);
-						AVPacket pkt;
-						av_init_packet(&pkt);
-						pkt.stream_index = 0 ;
-						pkt.data = (uint8_t *)data ;
-						pkt.size = ps_len ;
-						int ret = av_write_frame(oc,&pkt);
-						if (0 != ret) {
-							printf( "error %d writing %u bytes of SPS header\n", ret, ps_len);
-						}
-
-					}
-					if (encoder.getPPS(data,ps_len)) {
-						printf( "have PPS data: %p/%u\n", data,ps_len);
-						AVPacket pkt;
-						av_init_packet(&pkt);
-						pkt.stream_index = 0 ;
-						pkt.data = (uint8_t *)data ;
-						pkt.size = ps_len ;
-						int ret = av_write_frame(oc,&pkt);
-						if (0 != ret) {
-							printf( "error %d writing %u bytes of SPS header\n", ret, ps_len);
-						}
-					}
-
-					unsigned frameCount = params.getIterations();
-					if (0 == frameCount) {
-						frameCount = NUMBUFFERS ;
-					}
-					printf ("--------saving %u frames\n", frameCount);
 					int64_t pts = 0LL ;
-					for (unsigned i = 0 ; i < frameCount ; i++) {
+					unsigned i = 0 ;
+					unsigned gopSize = (0 == params.getGOP()) ? 0xFFFFFFFF : params.getGOP();
+
+					while (fill_yuv(i,params,images,buffers[i%NUMBUFFERS],ysize,uvsize)) {
+						if (0 == (i%gopSize)) {
+                                                        writeHeaders(encoder,oc);
+						}
+
                                                 void const *outData ;
                                                 unsigned    outLength ;
-						unsigned    y = yvalue(i);
-						unsigned char *buf = buffers[i%NUMBUFFERS];
-						memset (buf, y,ysize);
-						memset (buf+ysize,0x80,2*uvsize);
 						if (encoder.encode(i%NUMBUFFERS,outData,outLength)) {
 							AVPacket pkt;
 							av_init_packet(&pkt);
@@ -554,12 +642,13 @@ int main (int argc, char const **argv) {
 #if 1
 							int ret = av_write_frame(oc, &pkt);
 							if (0 != ret) {
-								fprintf (stderr, "Error %dwhile writing video frame\n", ret);
+								fprintf (stderr, "Error %d:%m writing video frame\n", ret);
 								break;
 							}
 #endif
 						} else
 							fprintf (stderr, "encode error(%d): %p/%u\n", i,outData,outLength);
+						i++ ;
 					}
 					int rval = av_write_trailer(oc);
 					printf( "write trailer: %d\n", rval);

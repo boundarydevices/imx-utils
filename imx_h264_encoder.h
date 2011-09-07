@@ -53,6 +53,7 @@ public:
 			unsigned width,
 			unsigned height,
 			unsigned fourcc,
+		        unsigned gopSize,
                         struct v4l2_buffer *v4lbuffers,
 			unsigned numBuffers,
 			unsigned char **buffers);
