@@ -198,11 +198,19 @@ enum ftState {
 	FT_FIELDSET	= 1
 };
 
-static struct reglist_t const *registerDefs(void){
+static char const *getDataPath(unsigned cpu) {
+	switch (cpu) {
+		case 0x63000:
+			return "/etc/devregs_imx6x.dat" ;
+	}
+	return "/etc/devregs.dat" ;
+}
+
+static struct reglist_t const *registerDefs(unsigned cputype = 0){
 	static struct reglist_t *regs = 0 ;
 	if( 0 == regs ){
 		struct reglist_t *head = 0, *tail = 0 ;
-		FILE *fDefs = fopen(devregsPath, "rt");
+		FILE *fDefs = fopen(getDataPath(cputype), "rt");
 		if( fDefs ){
                         enum ftState state = FT_UNKNOWN ;
 			char inBuf[256];
@@ -267,7 +275,7 @@ static struct reglist_t const *registerDefs(void){
 						else
 							fprintf(stderr, "expecting hex digit, not %02x\n", (unsigned char)*next );
 					}
-					fprintf(stderr, "%s: syntax error on line %u <%s>\n", devregsPath, lineNum,next );
+					fprintf(stderr, "%s: syntax error on line %u <%s>\n", getDataPath(cputype), lineNum,next );
 				} else if((':' == *next) && (FT_UNKNOWN != state)) {
                                         next=skipSpaces(next+1);
 					char *start = next++ ;
@@ -335,7 +343,8 @@ static struct reglist_t const *registerDefs(void){
 			}
 			fclose(fDefs);
 			regs = head ;
-		}
+		} else 
+			perror(getDataPath(cputype));
 	}
 	return regs ;
 }
@@ -593,9 +602,41 @@ static void parseArgs( int &argc, char const **argv )
 	}
 }
 
+static int getcpu(unsigned &cpu) {
+	cpu = 0 ;
+	FILE *fIn = popen("cat /proc/cpuinfo | grep Revision | sed 's/.*: //'", "r");
+	if (fIn) {
+		char inBuf[512];
+		if (fgets(inBuf,sizeof(inBuf),fIn)) {
+			char *next = inBuf ;
+			char *end = inBuf+strlen(inBuf);
+			while (isxdigit(*next)) {
+				cpu <<= 4 ;
+				unsigned char c = toupper(*next++);
+				if (('0' <= c)&&('9' >= c)) {
+					cpu |= (c-'0');
+				} else {
+					cpu |= (10+(c-'A'));
+				}
+			}
+		}
+		fclose(fIn);
+	}
+	return (0 != cpu);
+}
+
 int main(int argc, char const **argv)
 {
+	unsigned cpu ;
+
 	parseArgs(argc,argv);
+
+	if (!getcpu(cpu)) {
+		fprintf(stderr, "Error reading CPU type\n");
+		return -1 ;
+	}
+	printf( "CPU type is 0x%x\n", cpu);
+        registerDefs(cpu);
 	if( 1 == argc ){
                 struct reglist_t const *defs = registerDefs();
 		while(defs){
