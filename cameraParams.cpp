@@ -27,8 +27,8 @@ static bool parseIP(char const *ip_and_port, unsigned &targetAddr, unsigned shor
 		unsigned len = colon-ip_and_port ;
 		memcpy(ip_address,ip_and_port,len);
 		ip_address[len] = '\0' ;
-                struct in_addr addr ;
-                if(inet_aton(ip_address, &addr )){
+		struct in_addr addr ;
+		if(inet_aton(ip_address, &addr )){
 			unsigned port = strtoul(colon+1,0,0);
 			if(port && (port < 0x10000) ){
 				targetAddr = addr.s_addr ;
@@ -89,26 +89,26 @@ cameraParams_t::cameraParams_t( int &argc, char const **&argv )
 					printf( "unknown output option %c\n",second);
 			}
 			else if( 'f' == tolower(*param) ){
-            			fps = strtol(param+1,0,0);
+				fps = strtol(param+1,0,0);
 			}
 			else if( 'g' == tolower(*param) ){
 				gopSize = strtol(param+1,0,0);
 			}
 			else if( '4' == *param ) {
-                                unsigned fcc ; 
-                                if(supported_fourcc(param+1,fcc)){
-                                    fourcc = fcc ;
-                                } else {
-                                    fprintf(stderr, "Invalid format %s\n", param+1 );
-                                    fprintf(stderr, "supported formats include:\n" );
-                                    unsigned const *formats ; unsigned num_formats ;
-                                    supported_fourcc_formats(formats,num_formats);
-                                    while( num_formats-- ){
-                                        fprintf(stderr, "\t%s\n", fourcc_str(*formats));
-                                        formats++ ;
-                                    }
-                                    exit(1);
-                                }
+				unsigned fcc ; 
+				if(supported_fourcc(param+1,fcc)){
+				    fourcc = fcc ;
+				} else {
+				    fprintf(stderr, "Invalid format %s\n", param+1 );
+				    fprintf(stderr, "supported formats include:\n" );
+				    unsigned const *formats ; unsigned num_formats ;
+				    supported_fourcc_formats(formats,num_formats);
+				    while( num_formats-- ){
+					fprintf(stderr, "\t%s\n", fourcc_str(*formats));
+					formats++ ;
+				    }
+				    exit(1);
+				}
 			}
 			else if ( 'd' == cmdchar ) {
 				cameraDevName = param+1 ;
@@ -222,7 +222,7 @@ void cameraParams_t::dump(void) const {
 		, saveFrame
 		, iterations );
 	if (0 != getBroadcastAddr()) {
-                struct in_addr in ;
+		struct in_addr in ;
 		in.s_addr = getBroadcastAddr();
 		printf( "	broadcast to %s:0x%04x\n", inet_ntoa(in), getBroadcastPort());
 	}
