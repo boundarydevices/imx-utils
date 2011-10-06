@@ -15,7 +15,7 @@ showversion:
 
 INCS		:= -I/tftpboot/linux-bd/include
 
-LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp physMem.cpp hexDump.cpp
+LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp physMem.cpp hexDump.cpp imx_h264_encoder.cpp
 LIBRARY_OBJS	:= $(addsuffix .o,$(basename ${LIBRARY_SRCS}))
 LIBRARY		:= libimx-camera.a
 LIBRARY_REF	:= -L./ -limx-camera

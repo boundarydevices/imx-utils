@@ -320,7 +320,7 @@ bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outL
 	EncParam  enc_param = {0};
 
 	enc_param.sourceFrame = &fb[index];
-	enc_param.quantParam = 23;
+	enc_param.quantParam = 25;
 	enc_param.forceIPicture = 0;
 	enc_param.skipPicture = 0;
 	RetCode ret = vpu_EncStartOneFrame(handle_, &enc_param);
@@ -344,7 +344,7 @@ bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outL
 								ret);
 		return false ;
 	}
-
+printf("%u",outinfo.picType); fflush(stdout);
 	outData = (void *)(virt_bsbuf_addr + outinfo.bitstreamBuffer - phy_bsbuf_addr);
 	outLength = outinfo.bitstreamSize ;
 	return true ;

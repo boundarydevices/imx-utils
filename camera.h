@@ -48,6 +48,7 @@ public:
 	unsigned stride(void) const { return fmt_.fmt.pix.bytesperline ;}
 	unsigned imgSize(void) const { return fmt_.fmt.pix.sizeimage ;}
 	unsigned numBuffers(void) const { return n_buffers_ ; }
+        struct v4l2_buffer *v4l2_Buffers(void) const { return v4l_buffers_ ;}
 	unsigned char **getBuffers(void) const { return buffers_ ; }
 
 	// capture interface
@@ -70,6 +71,7 @@ private:
 	unsigned const          h_ ;
 	struct pollfd           pfd_ ;
 	struct v4l2_format      fmt_ ;
+        struct v4l2_buffer 	*v4l_buffers_ ;
 	unsigned char	        **buffers_ ;
 	unsigned                n_buffers_ ;
 	unsigned		buffer_length_ ;

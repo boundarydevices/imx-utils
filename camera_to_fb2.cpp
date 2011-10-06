@@ -20,6 +20,7 @@
 #ifndef ANDROID
 #include "imx_vpu.h"
 #include "imx_mjpeg_encoder.h"
+#include "imx_h264_encoder.h"
 #endif
 
 #define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
@@ -27,6 +28,7 @@
 bool doCopy = true ;
 static char const *fileName = 0 ;
 static bool saveJPEG = false ;
+static bool saveH264 = false ;
 
 class stringSplit_t {
 public:
@@ -116,7 +118,7 @@ static void trimCtrl(char *buf){
 
 static bool volatile doExit = false ;
 
-static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &params)
+static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &params, h264_encoder_t *&h264_encoder)
 {
         trimCtrl(cmd);
         stringSplit_t split(cmd);
@@ -183,6 +185,13 @@ static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &pa
 				}
 				break;
 			}
+                        case 'v': {
+				if (1 < split.getCount()) {
+					saveH264 = true ;
+					fileName = strdup(split.getPtr(1));
+				}
+				break;
+			}
                         case 'x': {
 				close(overlay->getFd());
 				doExit = true ;
@@ -210,6 +219,7 @@ static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &pa
                                                 "\ty yval [start [end]] - set y buffer(s) to specified value\n" 
                                                 "\ts filename - save raw data to filename\n" 
                                                 "\tj filename - save JPEG data to filename\n" 
+                                                "\tv filename - save H264 video to filename\n" 
                                                 "\tr 	- reopen display\n"
                                                 "\n"
                                                 "most start and end positions can be specified in fractions.\n" 
@@ -382,13 +392,15 @@ static void ctrlcHandler( int signo )
 int main( int argc, char const **argv ) {
 #ifndef ANDROID
 	vpu_t vpu ;
-        mjpeg_encoder_t *encoder = 0 ;
+        mjpeg_encoder_t *jpeg_encoder = 0 ;
+	h264_encoder_t *h264_encoder = 0 ;
 #endif
 	cameraParams_t params(argc,argv);
 	params.dump();
 	unsigned color_key ;
 	if (!params.getPreviewColorKey(color_key))
 		color_key = 0xFFFFFF ;
+	FILE *fOut = 0 ;
 
 	signal( SIGINT, ctrlcHandler );
 	signal( SIGHUP, ctrlcHandler );
@@ -426,14 +438,24 @@ int main( int argc, char const **argv ) {
 						    ((int)totalFrames == params.getSaveFrameNumber())) {
 							fileName = (0 == fileName) ? "/tmp/camera.out" : fileName ;
 							printf( "saving %u bytes of img %u to %s\n", camera.imgSize(), index, fileName );
-							FILE *fOut = fopen( fileName, "wb" );
+							if (0 == fOut)
+								fOut = fopen( fileName, "wb" );
 							if( fOut ) {
-								if (0 == saveJPEG) {
-									fwrite(camera_frame,1,camera.imgSize(),fOut);
-								} else {
+								if (saveH264) {
 #ifndef ANDROID
-									if (0 == encoder) {
-										encoder = new mjpeg_encoder_t(
+									h264_encoder = new h264_encoder_t(vpu,
+													  params.getCameraWidth(),
+                                                                                                          params.getCameraHeight(),
+                                                                                                          params.getCameraFourcc(),
+                                                                                                          params.getGOP(),
+													  camera.v4l2_Buffers(),
+													  camera.numBuffers(),
+													  camera.getBuffers());
+#endif
+								} else if (saveJPEG) {
+#ifndef ANDROID
+									if (0 == jpeg_encoder) {
+										jpeg_encoder = new mjpeg_encoder_t(
 												vpu,
 												params.getCameraWidth(),
 												params.getCameraHeight(),
@@ -443,24 +465,51 @@ int main( int argc, char const **argv ) {
 												camera.getBuffers()
 										);
 									}
-									if (encoder && encoder->initialized()) {
+									if (jpeg_encoder && jpeg_encoder->initialized()) {
 										void const *outData ;
 										unsigned    outLength ;
-										if( encoder->encode(index, outData,outLength) ){
+										if( jpeg_encoder->encode(index, outData,outLength) ){
+											saveJPEG = false ;
 											fwrite(outData,1,outLength,fOut);
 											printf( "JPEG data saved\n" );
 										} else
 											perror( "encode error");
 									} else
 #endif
-										perror( "invalid MJPEG encoder\n");
+										perror( "invalid MJPEG jpeg_encoder\n");
 								}
-								fclose(fOut);
-								printf("done\n");
-								fflush(stdout);
+								else {
+									fwrite(camera_frame,1,camera.imgSize(),fOut);
+								}
+								if (!saveH264) {
+									fclose(fOut);
+									printf("done\n");
+									fflush(stdout);
+								}
 							} else
 								perror("/tmp/camera.out" );
 							fileName = 0 ;
+						} else if (h264_encoder && fOut) {
+							if (saveH264) {
+                                                                void const *spsdata ;
+                                                                unsigned sps_len ;
+                                                                void const *ppsdata ;
+                                                                unsigned pps_len ;
+                                                                if (h264_encoder->getSPS(spsdata,sps_len)
+                                                                    &&
+                                                                    h264_encoder->getPPS(ppsdata,pps_len)) {
+									fwrite (spsdata,1,sps_len,fOut);
+									fwrite (ppsdata,1,pps_len,fOut);
+                                                                }
+								saveH264 = false ;
+								printf("saved %u bytes of SPS, %u bytes of PPS\n", sps_len, pps_len);
+							}
+							void const *outData ;
+							unsigned    outLength ;
+							if (h264_encoder->encode(index,outData,outLength)) {
+								fwrite (outData,1,outLength,fOut);
+							} else
+								fprintf (stderr, "encode error(%d): %p/%u\n", index,outData,outLength);
 						}
                                                 ++totalFrames ;
                                                 ++frameCount ;
@@ -476,7 +525,7 @@ int main( int argc, char const **argv ) {
                                                         char inBuf[512];
                                                         if ( fgets(inBuf,sizeof(inBuf),stdin) ) {
                                                                 trimCtrl(inBuf);
-                                                                process_command(inBuf, overlay,params);
+                                                                process_command(inBuf, overlay,params,h264_encoder);
                                                                 long long elapsed = tickMs()-start;
                                                                 if ( 0LL == elapsed )
                                                                         elapsed = 1 ;
@@ -502,6 +551,9 @@ int main( int argc, char const **argv ) {
         }
         else
                 fprintf(stderr, "Error opening v4l output\n" );
+	if (fOut) {
+		fclose(fOut);
+	}
 	delete overlay ;
         return 0 ;
 }

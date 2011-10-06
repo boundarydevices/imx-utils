@@ -58,6 +58,7 @@ camera_t::camera_t
 : fd_( -1 )
 , w_(width)
 , h_(height)
+, v4l_buffers_(0)
 , buffers_(0)
 , n_buffers_(0)
 , buffer_length_(0)
@@ -206,6 +207,12 @@ camera_t::camera_t
 		goto bail ;
 	}
 
+        v4l_buffers_ = (struct v4l2_buffer *)calloc (req.count, sizeof(v4l_buffers_[0]));
+	if (!v4l_buffers_) {
+		ERRMSG( "Out of memory\n");
+		goto bail ;
+	}
+
 	buffers_ = (unsigned char **)calloc (req.count, sizeof (buffers_[0]));
 
 	if (!buffers_) {
@@ -214,7 +221,8 @@ camera_t::camera_t
 	}
 
 	for (n_buffers_ = 0; n_buffers_ < req.count; ++n_buffers_) {
-		struct v4l2_buffer buf ; memset(&buf,0,sizeof(buf));
+		struct v4l2_buffer &buf = v4l_buffers_[n_buffers_];
+		memset(&buf,0,sizeof(buf));
 
 		buf.type        = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory      = V4L2_MEMORY_MMAP;
@@ -261,6 +269,10 @@ camera_t::~camera_t(void) {
 		}
 		free(buffers_);
 		buffers_ = 0 ;
+	}
+	if (v4l_buffers_) {
+		free(v4l_buffers_);
+                v4l_buffers_ = 0 ;
 	}
 	if (isOpen()) {
 		close(fd_);
