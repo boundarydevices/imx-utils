@@ -350,7 +350,7 @@ bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outL
 	return true ;
 }
 
-bool h264_encoder_t::getSPS(void const *&sps, unsigned &len){ 
+bool h264_encoder_t::getSPS(void const *&sps, unsigned &len){
 	EncHeaderParam enchdr_param = {0};
 	enchdr_param.headerType = SPS_RBSP;
 	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
@@ -360,10 +360,10 @@ bool h264_encoder_t::getSPS(void const *&sps, unsigned &len){
 	memcpy(spsdata,vbuf,spslen);
 	printf("%s: %u bytes of SPS data\n", __func__, spslen);
 
-	sps=spsdata; len=spslen ; return (0 < spslen); 
+	sps=spsdata; len=spslen ; return (0 < spslen);
 }
 
-bool h264_encoder_t::getPPS(void const *&pps, unsigned &len){ 
+bool h264_encoder_t::getPPS(void const *&pps, unsigned &len){
 	EncHeaderParam enchdr_param = {0};
 	enchdr_param.headerType = PPS_RBSP;
 	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
@@ -371,7 +371,7 @@ bool h264_encoder_t::getPPS(void const *&pps, unsigned &len){
 	assert(ppslen==enchdr_param.size);
 	memcpy(ppsdata,vbuf,ppslen);
 	printf("%s: %u bytes of SPS data\n", __func__, ppslen);
-	pps=ppsdata; len=ppslen ; return (0 < ppslen); 
+	pps=ppsdata; len=ppslen ; return (0 < ppslen);
 }
 
 
