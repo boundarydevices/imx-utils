@@ -12,3 +12,4 @@ battery_test
 ipu_bufs_mx51
 ipu_bufs_mx53
 imx_h264_encoder
+imx_mpeg4_encoder

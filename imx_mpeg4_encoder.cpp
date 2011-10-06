@@ -1,13 +1,13 @@
 /*
- * Module imx_h264_encoder.cpp
+ * Module imx_mpeg4_encoder.cpp
  *
- * This module defines the methods of the h264_encoder_t class
- * as declared in imx_h264_encoder.h
+ * This module defines the methods of the mpeg4_encoder_t class
+ * as declared in imx_mpeg4_encoder.h
  *
  * Copyright Boundary Devices, Inc. 2010
  */
 
-#include "imx_h264_encoder.h"
+#include "imx_mpeg4_encoder.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -22,7 +22,7 @@
 
 #define STREAM_BUF_SIZE		0x80000
 
-h264_encoder_t::h264_encoder_t(
+mpeg4_encoder_t::mpeg4_encoder_t(
 	vpu_t &vpu,
 	unsigned w,
 	unsigned h,
@@ -93,7 +93,7 @@ printf( "%s: sizes %u/%u: %u\n", __func__, ysize, uvsize, totalsize);
 	/* Fill up parameters for encoding */
 	encop.bitstreamBuffer = phy_bsbuf_addr;
 	encop.bitstreamBufferSize = STREAM_BUF_SIZE;
-	encop.bitstreamFormat = STD_AVC ;
+	encop.bitstreamFormat = STD_MPEG4 ;
 
 	encop.picWidth = picwidth = w;
 	encop.picHeight = picheight = h;
@@ -269,34 +269,11 @@ debugPrint( "registering frame buffer\n" );
 		debugPrint( "registered frame buffer\n" );
 
 debugPrint( "%u frame buffers allocated and registered\n", fbcount );
-
-	EncHeaderParam enchdr_param = {0};
-	enchdr_param.headerType = SPS_RBSP;
-	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
-	char *vbuf = (char *)(virt_bsbuf_addr + enchdr_param.buf - phy_bsbuf_addr);
-	spslen=enchdr_param.size ;
-	spsdata = malloc(spslen);
-	memcpy(spsdata,vbuf,spslen);
-	printf("%s: %u bytes of SPS data\n", __func__, spslen);
-
-	enchdr_param.headerType = PPS_RBSP;
-	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
-	vbuf = (char *)(virt_bsbuf_addr + enchdr_param.buf - phy_bsbuf_addr);
-	ppslen=enchdr_param.size ;
-	ppsdata = malloc(ppslen);
-	memcpy(ppsdata,vbuf,ppslen);
-	printf("%s: %u bytes of SPS data\n", __func__, ppslen);
 	initialized_ = true ;
-
-debugPrint("Saved AVC header... Done with %s\n", __func__ );
 }
 
-h264_encoder_t::~h264_encoder_t(void) {
+mpeg4_encoder_t::~mpeg4_encoder_t(void) {
 
-	if (spsdata)
-		free(spsdata);
-	if (ppsdata)
-		free(ppsdata);
 	debugPrint( "closing encoder\n" );
 	RetCode rc = vpu_EncClose(handle_);
 	if( RETCODE_SUCCESS != rc )
@@ -306,7 +283,7 @@ h264_encoder_t::~h264_encoder_t(void) {
 	}
 }
 
-bool h264_encoder_t::get_bufs( unsigned index, unsigned char *&y, unsigned char *&u, unsigned char *&v )
+bool mpeg4_encoder_t::get_bufs( unsigned index, unsigned char *&y, unsigned char *&u, unsigned char *&v )
 {
 	unsigned char *base = buffers[index];
 	y = base + yoffs ;
@@ -315,7 +292,7 @@ bool h264_encoder_t::get_bufs( unsigned index, unsigned char *&y, unsigned char 
 	return true ;
 }
 
-bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outLength)
+bool mpeg4_encoder_t::encode(unsigned index, void const *&outData, unsigned &outLength)
 {
 	EncParam  enc_param = {0};
 
@@ -349,31 +326,6 @@ bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outL
 	outLength = outinfo.bitstreamSize ;
 	return true ;
 }
-
-bool h264_encoder_t::getSPS(void const *&sps, unsigned &len){ 
-	EncHeaderParam enchdr_param = {0};
-	enchdr_param.headerType = SPS_RBSP;
-	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
-	char *vbuf = (char *)(virt_bsbuf_addr + enchdr_param.buf - phy_bsbuf_addr);
-	spslen=enchdr_param.size ;
-	assert(spslen==enchdr_param.size);
-	memcpy(spsdata,vbuf,spslen);
-	printf("%s: %u bytes of SPS data\n", __func__, spslen);
-
-	sps=spsdata; len=spslen ; return (0 < spslen); 
-}
-
-bool h264_encoder_t::getPPS(void const *&pps, unsigned &len){ 
-	EncHeaderParam enchdr_param = {0};
-	enchdr_param.headerType = PPS_RBSP;
-	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
-	char *vbuf = (char *)(virt_bsbuf_addr + enchdr_param.buf - phy_bsbuf_addr);
-	assert(ppslen==enchdr_param.size);
-	memcpy(ppsdata,vbuf,ppslen);
-	printf("%s: %u bytes of SPS data\n", __func__, ppslen);
-	pps=ppsdata; len=ppslen ; return (0 < ppslen); 
-}
-
 
 #ifdef MODULETEST
 #include "cameraParams.h"
@@ -511,40 +463,12 @@ static bool fill_yuv(unsigned &iteration,cameraParams_t &params, imgFile_t *&ima
 	}
 }
 
-static void writeHeaders(h264_encoder_t &encoder,
-			 AVFormatContext *oc )
-{
-	void const *spsdata ;
-	unsigned sps_len ;
-	void const *ppsdata ;
-	unsigned pps_len ;
-	if (encoder.getSPS(spsdata,sps_len)
-	    &&
-	    encoder.getPPS(ppsdata,pps_len)) {
-		char *const tmp = (char *)malloc(sps_len+pps_len);
-		memcpy(tmp,spsdata,sps_len);
-		memcpy(tmp+sps_len,ppsdata,pps_len);
-		AVPacket pkt;
-		av_init_packet(&pkt);
-		pkt.flags |= AV_PKT_FLAG_KEY;
-		pkt.stream_index = 0 ;
-		pkt.data = (uint8_t *)tmp ;
-		pkt.size = sps_len+pps_len ;
-		int ret = av_write_frame(oc,&pkt);
-		if (0 != ret) {
-			printf( "error %d writing %u bytes of SPS header\n", ret, pkt.size);
-		}
-		free(tmp);
-
-	}
-}
-
 int main (int argc, char const **argv) {
 	cameraParams_t params(argc,argv);
 	if (1 < argc) {
 		char const *outfile = argv[1];
+		printf("save output to %s\n", outfile);
 		char const *format = (2<argc) ? argv[2] : "MP4" ;
-		printf("save output to %s, format %s\n", outfile, format);
 		vpu_t vpu ;
 		if (vpu.worked()) {
 			printf("vpu opened\n");
@@ -593,7 +517,7 @@ int main (int argc, char const **argv) {
                                         buffers[i] = (unsigned char *)virt_bsbuf_addr ;
 				}
 				printf("allocated %u buffers of %u bytes each\n", NUMBUFFERS,totalsize);
-				h264_encoder_t encoder(vpu,
+				mpeg4_encoder_t encoder(vpu,
 						       params.getCameraWidth(),
 						       params.getCameraHeight(),
 						       params.getCameraFourcc(),
@@ -614,7 +538,7 @@ int main (int argc, char const **argv) {
 #endif
 					AVFormatContext *oc ;
 					avformat_alloc_output_context2(&oc,NULL,NULL,outfile);
-
+					
 					outfmt= oc->oformat ;
 					if (0 == outfmt) {
 						fprintf (stderr, "unknown file format\n");
@@ -639,14 +563,10 @@ int main (int argc, char const **argv) {
 					unsigned gopSize = (0 == params.getGOP()) ? 0xFFFFFFFF : params.getGOP();
 
 					while (fill_yuv(i,params,images,buffers[i%NUMBUFFERS],ysize,uvsize)) {
-						if (0 == (i)){ // %gopSize)) {
-							writeHeaders(encoder,oc);
-						}
-
                                                 void const *outData ;
                                                 unsigned    outLength ;
 						if (encoder.encode(i%NUMBUFFERS,outData,outLength)) {
-// printf( "%02x %02x %02x %02x %02x\n", ((uint8_t *)outData)[0], ((uint8_t *)outData)[1], ((uint8_t *)outData)[2], ((uint8_t *)outData)[3], ((uint8_t *)outData)[4]);
+printf( "%02x %02x %02x %02x %02x\n", ((uint8_t *)outData)[0], ((uint8_t *)outData)[1], ((uint8_t *)outData)[2], ((uint8_t *)outData)[3], ((uint8_t *)outData)[4]);
 							AVPacket pkt;
 							av_init_packet(&pkt);
 

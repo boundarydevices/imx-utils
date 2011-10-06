@@ -1,11 +1,11 @@
-#ifndef __IMX_H264_ENCODER_H__
-#define __IMX_H264_ENCODER_H__ "$Id$"
+#ifndef __IMX_MPEG4_ENCODER_H__
+#define __IMX_MPEG4_ENCODER_H__ "$Id$"
 
 /*
- * imx_h264_encoder.h
+ * imx_mpeg4_encoder.h
  *
- * This header file declares the h264_encoder_t class for
- * use in encoding YUV data as H264 using the i.MX51's
+ * This header file declares the mpeg4_encoder_t class for
+ * use in encoding YUV data as MPEG4 using the i.MX51's
  * hardware encoder.
  *
  * The simplest use-case is:
@@ -47,9 +47,9 @@ extern "C" {
 
 #include "imx_vpu.h"
 
-class h264_encoder_t {
+class mpeg4_encoder_t {
 public:
-	h264_encoder_t(vpu_t &vpu,
+	mpeg4_encoder_t(vpu_t &vpu,
 			unsigned width,
 			unsigned height,
 			unsigned fourcc,
@@ -73,7 +73,7 @@ public:
 	// get AVC headers
 	bool getSPS( void const *&sps, unsigned &len);
 	bool getPPS( void const *&pps, unsigned &len);
-	~h264_encoder_t(void);
+	~mpeg4_encoder_t(void);
 private:
 #if 0
 	struct frame_buf {

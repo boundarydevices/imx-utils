@@ -7,13 +7,13 @@ LD		:= ${ARCH}g++
 AR		:= ${ARCH}ar
 RANLIB		:= ${ARCH}ranlib
 STRIP		:= ${ARCH}strip
-CXXFLAGS	?= -I${HOME}/ltib/rootfs/usr/include -L${HOME}/ltib/rootfs/usr/lib
+CXXFLAGS	?= -I/tftpboot/ltib/usr/include -I/home/ericn/linux-bd/include -L/tftpboot/ltib/usr/lib
 VERSION := $(shell ./makeVersion.sh)
 
 showversion:
 	echo "building version ${VERSION} here"
 
-INCS		:= -I${HOME}/linux-bd/include
+INCS		:= -I/tftpboot/linux-bd/include
 
 LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp physMem.cpp hexDump.cpp
 LIBRARY_OBJS	:= $(addsuffix .o,$(basename ${LIBRARY_SRCS}))
@@ -46,6 +46,9 @@ pmic: pmic.cpp
 	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< -o $@
 
 imx_h264_encoder: imx_h264_encoder.cpp ${LIBRARY}
+	${CXX} ${CXXFLAGS} -DMODULETEST=1 ${INCS} ${DEFS} $< -lvpu ${LIBRARY_REF} -lavformat -lavcodec -lavutil -lz -lbz2 -lpthread -o $@
+
+imx_mpeg4_encoder: imx_mpeg4_encoder.cpp ${LIBRARY}
 	${CXX} ${CXXFLAGS} -DMODULETEST=1 ${INCS} ${DEFS} $< -lvpu ${LIBRARY_REF} -lavformat -lavcodec -lavutil -lz -lbz2 -lpthread -o $@
 
 EXES		:= camera_to_fb2 devregs
