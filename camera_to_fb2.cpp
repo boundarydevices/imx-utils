@@ -118,7 +118,7 @@ static void trimCtrl(char *buf){
 
 static bool volatile doExit = false ;
 
-static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &params, h264_encoder_t *&h264_encoder)
+static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &params)
 {
         trimCtrl(cmd);
         stringSplit_t split(cmd);
@@ -489,6 +489,7 @@ int main( int argc, char const **argv ) {
 							} else
 								perror("/tmp/camera.out" );
 							fileName = 0 ;
+#ifndef ANDROID
 						} else if (h264_encoder && fOut) {
 							if (saveH264) {
                                                                 void const *spsdata ;
@@ -510,6 +511,7 @@ int main( int argc, char const **argv ) {
 								fwrite (outData,1,outLength,fOut);
 							} else
 								fprintf (stderr, "encode error(%d): %p/%u\n", index,outData,outLength);
+#endif
 						}
                                                 ++totalFrames ;
                                                 ++frameCount ;
@@ -525,7 +527,7 @@ int main( int argc, char const **argv ) {
                                                         char inBuf[512];
                                                         if ( fgets(inBuf,sizeof(inBuf),stdin) ) {
                                                                 trimCtrl(inBuf);
-                                                                process_command(inBuf, overlay,params,h264_encoder);
+                                                                process_command(inBuf, overlay,params);
                                                                 long long elapsed = tickMs()-start;
                                                                 if ( 0LL == elapsed )
                                                                         elapsed = 1 ;
