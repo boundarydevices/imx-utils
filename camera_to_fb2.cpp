@@ -404,7 +404,7 @@ int main( int argc, char const **argv ) {
 
 	signal( SIGINT, ctrlcHandler );
 	signal( SIGHUP, ctrlcHandler );
-	printf("installed int handler\n");
+	printf("Updated version includes video support\n");
         printf( "format %s\n", fourcc_str(params.getCameraFourcc()));
         fb2_overlay_t *overlay = new fb2_overlay_t
 			(params.getPreviewX(),
@@ -491,23 +491,23 @@ int main( int argc, char const **argv ) {
 							fileName = 0 ;
 #ifndef ANDROID
 						} else if (h264_encoder && fOut) {
-							if (saveH264) {
-                                                                void const *spsdata ;
-                                                                unsigned sps_len ;
-                                                                void const *ppsdata ;
-                                                                unsigned pps_len ;
-                                                                if (h264_encoder->getSPS(spsdata,sps_len)
-                                                                    &&
-                                                                    h264_encoder->getPPS(ppsdata,pps_len)) {
-									fwrite (spsdata,1,sps_len,fOut);
-									fwrite (ppsdata,1,pps_len,fOut);
-                                                                }
-								saveH264 = false ;
-								printf("saved %u bytes of SPS, %u bytes of PPS\n", sps_len, pps_len);
-							}
+							saveH264 = false ;
 							void const *outData ;
 							unsigned    outLength ;
-							if (h264_encoder->encode(index,outData,outLength)) {
+							bool iframe ;
+							if (h264_encoder->encode(index,outData,outLength,iframe)) {
+								if (iframe) {
+									void const *spsdata ;
+									unsigned sps_len ;
+									void const *ppsdata ;
+									unsigned pps_len ;
+									if (h264_encoder->getSPS(spsdata,sps_len)
+									    &&
+									    h264_encoder->getPPS(ppsdata,pps_len)) {
+										fwrite (spsdata,1,sps_len,fOut);
+										fwrite (ppsdata,1,pps_len,fOut);
+									}
+								}
 								fwrite (outData,1,outLength,fOut);
 							} else
 								fprintf (stderr, "encode error(%d): %p/%u\n", index,outData,outLength);

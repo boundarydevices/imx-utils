@@ -68,7 +68,7 @@ public:
 	bool get_bufs( unsigned index, unsigned char *&y, unsigned char *&u, unsigned char *&v );
 
 	// synchronous encode
-	bool encode( unsigned index, void const *&outData, unsigned &outLength);
+	bool encode( unsigned index, void const *&outData, unsigned &outLength, bool &iframe);
 
 	// get AVC headers
 	bool getSPS( void const *&sps, unsigned &len);
@@ -105,6 +105,8 @@ private:
 	unsigned 	spslen ;
 	void	       *ppsdata ;
 	unsigned 	ppslen ;
+	unsigned	gopsize ;
+	unsigned	frameidx ;
 };
 
 #endif

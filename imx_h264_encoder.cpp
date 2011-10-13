@@ -45,6 +45,8 @@ h264_encoder_t::h264_encoder_t(
 	, spslen(0)
 	, ppsdata(0)
 	, ppslen(0)
+	, gopsize((0 == gopSize)?1:gopSize)
+	, frameidx(0)
 {
 	if( (0 == w) || (0 == h) ) {
 		fprintf(stderr, "Invalid w or h (%ux%u)\n", w, h );
@@ -101,7 +103,7 @@ printf( "%s: sizes %u/%u: %u\n", __func__, ysize, uvsize, totalsize);
 	/*Note: Frame rate cannot be less than 15fps per H.263 spec */
 	encop.frameRateInfo = 30;
 	encop.bitRate = 0 ;
-	encop.gopSize = gopSize ;
+	encop.gopSize = gopsize ;
 	encop.slicemode.sliceMode = 0;	/* 0: 1 slice per picture; 1: Multiple slices per picture */
 	encop.slicemode.sliceSizeMode = 0; /* 0: silceSize defined by bits; 1: sliceSize defined by MB number*/
 	encop.slicemode.sliceSize = 4000;  /* Size of a slice in bits or MB numbers */
@@ -315,13 +317,14 @@ bool h264_encoder_t::get_bufs( unsigned index, unsigned char *&y, unsigned char 
 	return true ;
 }
 
-bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outLength)
+bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outLength, bool &iframe)
 {
 	EncParam  enc_param = {0};
 
 	enc_param.sourceFrame = &fb[index];
 	enc_param.quantParam = 25;
-	enc_param.forceIPicture = 0;
+	enc_param.forceIPicture = (0 == (frameidx%gopsize));
+	frameidx++ ;
 	enc_param.skipPicture = 0;
 	RetCode ret = vpu_EncStartOneFrame(handle_, &enc_param);
 	if (ret != RETCODE_SUCCESS) {
@@ -344,33 +347,22 @@ bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outL
 								ret);
 		return false ;
 	}
-printf("%u",outinfo.picType); fflush(stdout);
 	outData = (void *)(virt_bsbuf_addr + outinfo.bitstreamBuffer - phy_bsbuf_addr);
 	outLength = outinfo.bitstreamSize ;
+	iframe = (0 == outinfo.picType);
+	unsigned char *outBytes = (unsigned char *)outData ;
+	if (iframe) {
+		outBytes[4] |= 4 ;
+	}
+printf("%u",outinfo.picType); fflush(stdout);
 	return true ;
 }
 
 bool h264_encoder_t::getSPS(void const *&sps, unsigned &len){
-	EncHeaderParam enchdr_param = {0};
-	enchdr_param.headerType = SPS_RBSP;
-	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
-	char *vbuf = (char *)(virt_bsbuf_addr + enchdr_param.buf - phy_bsbuf_addr);
-	spslen=enchdr_param.size ;
-	assert(spslen==enchdr_param.size);
-	memcpy(spsdata,vbuf,spslen);
-	printf("%s: %u bytes of SPS data\n", __func__, spslen);
-
-	sps=spsdata; len=spslen ; return (0 < spslen);
+	sps = spsdata ;	len = spslen ; return (0 < spslen);
 }
 
 bool h264_encoder_t::getPPS(void const *&pps, unsigned &len){
-	EncHeaderParam enchdr_param = {0};
-	enchdr_param.headerType = PPS_RBSP;
-	vpu_EncGiveCommand(handle_, ENC_PUT_AVC_HEADER, &enchdr_param);
-	char *vbuf = (char *)(virt_bsbuf_addr + enchdr_param.buf - phy_bsbuf_addr);
-	assert(ppslen==enchdr_param.size);
-	memcpy(ppsdata,vbuf,ppslen);
-	printf("%s: %u bytes of SPS data\n", __func__, ppslen);
 	pps=ppsdata; len=ppslen ; return (0 < ppslen);
 }
 
