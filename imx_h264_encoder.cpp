@@ -359,11 +359,11 @@ printf("%u",outinfo.picType); fflush(stdout);
 }
 
 bool h264_encoder_t::getSPS(void const *&sps, unsigned &len){
-	sps = spsdata ;	len = spslen ; return (0 < spslen);
+	sps = (char *)spsdata+1 ; len = spslen-1 ; return (0 < spslen);
 }
 
 bool h264_encoder_t::getPPS(void const *&pps, unsigned &len){
-	pps=ppsdata; len=ppslen ; return (0 < ppslen);
+	pps=(char *)ppsdata+1; len=ppslen-1 ; return (0 < ppslen);
 }
 
 

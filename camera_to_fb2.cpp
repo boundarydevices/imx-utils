@@ -16,6 +16,10 @@
 #include <ctype.h>
 #include "fourcc.h"
 #include <signal.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #ifndef ANDROID
 #include "imx_vpu.h"
@@ -27,7 +31,10 @@
 
 bool doCopy = true ;
 static char const *fileName = 0 ;
+static char *udpDest = 0 ;
+sockaddr_in dest ;
 static bool saveJPEG = false ;
+static bool saveYUV = false ;
 static bool saveH264 = false ;
 
 class stringSplit_t {
@@ -173,7 +180,7 @@ static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &pa
                                 }
                         case 's': {
 				if (1 < split.getCount()) {
-					saveJPEG = false ;
+					saveYUV = true ;
 					fileName = strdup(split.getPtr(1));
 				}
 				break;
@@ -189,6 +196,13 @@ static void process_command(char *cmd,fb2_overlay_t *&overlay,cameraParams_t &pa
 				if (1 < split.getCount()) {
 					saveH264 = true ;
 					fileName = strdup(split.getPtr(1));
+				}
+				break;
+			}
+                        case 'u': {
+				if (1 < split.getCount()) {
+					saveH264 = true ;
+					udpDest = strdup(split.getPtr(1));
 				}
 				break;
 			}
@@ -429,10 +443,48 @@ int main( int argc, char const **argv ) {
                                 unsigned totalFrames = 0 ;
                                 unsigned outDrops = 0 ;
                                 long long start = tickMs();
+				int sockFd = -1 ;
                                 while (!doExit) {
                                         void const *camera_frame ;
                                         int index ;
                                         if ( camera.grabFrame(camera_frame,index) ) {
+#ifndef ANDROID
+						if (saveH264) {
+							h264_encoder = new h264_encoder_t(vpu,
+											  params.getCameraWidth(),
+											  params.getCameraHeight(),
+											  params.getCameraFourcc(),
+											  params.getGOP(),
+											  camera.v4l2_Buffers(),
+											  camera.numBuffers(),
+											  camera.getBuffers());
+							saveH264 = false ;
+#endif
+						}
+						if (0 != udpDest) {
+							char *port = strchr(udpDest,':');
+							if (port) {
+								*port++ = '\0' ;
+								dest.sin_family = AF_INET ;
+                                                                struct in_addr targetIP ;
+                                                                inet_aton(udpDest, &targetIP);
+								dest.sin_addr = targetIP ;
+                                                                dest.sin_port = strtoul(port,0,0);
+								sockFd = socket (AF_INET, SOCK_DGRAM, 0);
+								if (0 <= sockFd) {
+									int doit = 1 ;
+									int result = setsockopt (sockFd, SOL_SOCKET, SO_BROADCAST, &doit, sizeof(doit));
+									if( 0 != result )
+										perror ("SO_BROADCAST");
+								} else {
+									perror ("socket");
+								}
+							} else {
+								printf ("invalid ip/port. use form 192.168.0.100:0x2020\n");
+							}
+							free ((void *)udpDest);
+							udpDest = 0 ;
+						}
 						if ((0 != fileName) 
 						    || 
 						    ((int)totalFrames == params.getSaveFrameNumber())) {
@@ -441,18 +493,7 @@ int main( int argc, char const **argv ) {
 							if (0 == fOut)
 								fOut = fopen( fileName, "wb" );
 							if( fOut ) {
-								if (saveH264) {
-#ifndef ANDROID
-									h264_encoder = new h264_encoder_t(vpu,
-													  params.getCameraWidth(),
-                                                                                                          params.getCameraHeight(),
-                                                                                                          params.getCameraFourcc(),
-                                                                                                          params.getGOP(),
-													  camera.v4l2_Buffers(),
-													  camera.numBuffers(),
-													  camera.getBuffers());
-#endif
-								} else if (saveJPEG) {
+								if (saveJPEG) {
 #ifndef ANDROID
 									if (0 == jpeg_encoder) {
 										jpeg_encoder = new mjpeg_encoder_t(
@@ -478,19 +519,21 @@ int main( int argc, char const **argv ) {
 #endif
 										perror( "invalid MJPEG jpeg_encoder\n");
 								}
-								else {
+								else if (saveYUV){
 									fwrite(camera_frame,1,camera.imgSize(),fOut);
 								}
-								if (!saveH264) {
+								if (saveJPEG || saveYUV) {
 									fclose(fOut);
 									printf("done\n");
 									fflush(stdout);
+									saveJPEG = saveYUV = false ;
 								}
 							} else
 								perror("/tmp/camera.out" );
 							fileName = 0 ;
 #ifndef ANDROID
-						} else if (h264_encoder && fOut) {
+						}
+						if (h264_encoder) {
 							saveH264 = false ;
 							void const *outData ;
 							unsigned    outLength ;
@@ -504,11 +547,37 @@ int main( int argc, char const **argv ) {
 									if (h264_encoder->getSPS(spsdata,sps_len)
 									    &&
 									    h264_encoder->getPPS(ppsdata,pps_len)) {
-										fwrite (spsdata,1,sps_len,fOut);
-										fwrite (ppsdata,1,pps_len,fOut);
+										if (fOut) {
+                                                                                        fwrite (spsdata,1,sps_len,fOut);
+                                                                                        fwrite (ppsdata,1,pps_len,fOut);
+										}
+										if (0 <= sockFd) {
+											if (0 <= sockFd) {
+												int sent = sendto (sockFd,spsdata,sps_len,0,
+                                                                                                                   (struct sockaddr *)&dest, sizeof(dest));
+												if (sent != sps_len)
+													perror ("send(sps)");
+												sent = sendto (sockFd,ppsdata,pps_len,0,
+                                                                                                                   (struct sockaddr *)&dest, sizeof(dest));
+												if (sent != pps_len)
+													perror ("send(pps)");
+											}
+										}
 									}
 								}
-								fwrite (outData,1,outLength,fOut);
+								if (fOut) {
+									fwrite (outData,1,outLength,fOut);
+								}
+								if ((0 <= sockFd)&&(1<outLength)) {
+									--outLength ;
+									int sent = sendto (sockFd,(char *)outData+1,outLength,0,
+											   (struct sockaddr *)&dest, sizeof(dest));
+									if (sent != outLength)
+										perror ("send(data)");
+								}
+								if (0) { // 0 == outLength) {
+									printf("\n%u bytes\n", outLength);
+								}
 							} else
 								fprintf (stderr, "encode error(%d): %p/%u\n", index,outData,outLength);
 #endif
