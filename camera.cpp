@@ -188,7 +188,7 @@ camera_t::camera_t
 
 	struct v4l2_requestbuffers req ; memset(&req,0,sizeof(req));
 
-	req.count       = 4;
+	req.count       = 5;
 	req.type        = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	req.memory      = V4L2_MEMORY_MMAP;
 
@@ -232,13 +232,13 @@ camera_t::camera_t
 			perror ("VIDIOC_QUERYBUF");
 			goto bail; 
 		}
-ERRMSG("%s: buffer lengths %u/%u\n", __func__, buffer_length_,buf.length);
+		debugPrint("%s: buffer lengths %u/%u\n", __func__, buffer_length_,buf.length);
 		assert((0 == buffer_length_)||(buf.length == buffer_length_)); // only handle single buffer size
                 buffer_length_ = buf.length;
 		buffers_[n_buffers_] = (unsigned char *)
 		mmap (NULL /* start anywhere */,
 		      buf.length,
-		      PROT_READ | PROT_WRITE /* required */,
+		      PROT_READ /* required */,
 		      MAP_SHARED /* recommended */,
 		      fd_, buf.m.offset);
 
@@ -247,7 +247,6 @@ ERRMSG("%s: buffer lengths %u/%u\n", __func__, buffer_length_,buf.length);
 			goto bail ;
 		}
 
-		memset(buffers_[n_buffers_], 0, fmt_.fmt.pix.sizeimage);
 		if (fmt_.fmt.pix.sizeimage > buf.length)
 			ERRMSG("camera_imgsize=%x but buf.length=%x\n", fmt_.fmt.pix.sizeimage, buf.length);
 	}
