@@ -350,11 +350,6 @@ bool h264_encoder_t::encode(unsigned index, void const *&outData, unsigned &outL
 	outData = (void *)(virt_bsbuf_addr + outinfo.bitstreamBuffer - phy_bsbuf_addr);
 	outLength = outinfo.bitstreamSize ;
 	iframe = (0 == outinfo.picType);
-	unsigned char *outBytes = (unsigned char *)outData ;
-	if (iframe) {
-		outBytes[4] |= 4 ;
-	}
-printf("%u",outinfo.picType); fflush(stdout);
 	return true ;
 }
 
