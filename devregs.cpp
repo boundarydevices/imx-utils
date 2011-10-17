@@ -202,6 +202,11 @@ static char const *getDataPath(unsigned cpu) {
 	switch (cpu) {
 		case 0x63000:
 			return "/etc/devregs_imx6x.dat" ;
+		case 0x53020:
+		case 0x53010:
+			return "/etc/devregs_imx53.dat" ;
+		default:
+			printf("unsupported CPU type: %x\n", cpu);
 	}
 	return "/etc/devregs.dat" ;
 }
@@ -635,7 +640,7 @@ int main(int argc, char const **argv)
 		fprintf(stderr, "Error reading CPU type\n");
 		return -1 ;
 	}
-	printf( "CPU type is 0x%x\n", cpu);
+//	printf( "CPU type is 0x%x\n", cpu);
         registerDefs(cpu);
 	if( 1 == argc ){
                 struct reglist_t const *defs = registerDefs();
