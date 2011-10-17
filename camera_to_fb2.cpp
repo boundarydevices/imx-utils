@@ -459,8 +459,8 @@ int main( int argc, char const **argv ) {
 											  camera.numBuffers(),
 											  camera.getBuffers());
 							saveH264 = false ;
-#endif
 						}
+#endif
 						if (0 != udpDest) {
 							char *port = strchr(udpDest,':');
 							if (port) {
