@@ -587,31 +587,29 @@ int main( int argc, char const **argv ) {
 						phys_to_fb2(camera_frame,camera.imgSize(),*overlay,params);
                                                 camera.returnFrame(camera_frame,index);
                                         }
-//                                        if (isatty(0)) {
-                                                struct pollfd fds[1];
-                                                fds[0].fd = fileno(stdin); // STDIN
-                                                fds[0].events = POLLIN|POLLERR;
-                                                int numReady = poll(fds,1,0);
-                                                if ( 0 < numReady ) {
-                                                        char inBuf[512];
-                                                        if ( fgets(inBuf,sizeof(inBuf),stdin) ) {
-                                                                trimCtrl(inBuf);
-                                                                process_command(inBuf, overlay,params);
-                                                                long long elapsed = tickMs()-start;
-                                                                if ( 0LL == elapsed )
-                                                                        elapsed = 1 ;
-								unsigned whole_fps = (frameCount*1000)/elapsed ;
-								unsigned frac_fps = ((frameCount*1000000)/elapsed)%1000 ;
-                                                                printf( "%lu frames, start %llu, elapsed %llu %u.%03u fps. %u dropped\n", 
-									frameCount, start, elapsed, whole_fps, frac_fps, camera.numDropped() );
-                                                                frameCount = 0 ; start = tickMs();
-                                                        }
-                                                        else {
-                                                                printf( "[eof]\n");
-                                                                break;
-                                                        }
-                                                }
-//                                        }
+					struct pollfd fds[1];
+					fds[0].fd = fileno(stdin); // STDIN
+					fds[0].events = POLLIN|POLLERR;
+					int numReady = poll(fds,1,0);
+					if ( 0 < numReady ) {
+						char inBuf[512];
+						if ( fgets(inBuf,sizeof(inBuf),stdin) ) {
+							trimCtrl(inBuf);
+							process_command(inBuf, overlay,params);
+							long long elapsed = tickMs()-start;
+							if ( 0LL == elapsed )
+								elapsed = 1 ;
+							unsigned whole_fps = (frameCount*1000)/elapsed ;
+							unsigned frac_fps = ((frameCount*1000000)/elapsed)%1000 ;
+							printf( "%lu frames, start %llu, elapsed %llu %u.%03u fps. %u dropped\n", 
+								frameCount, start, elapsed, whole_fps, frac_fps, camera.numDropped() );
+							frameCount = 0 ; start = tickMs();
+						}
+						else {
+							printf( "[eof]\n");
+							break;
+						}
+					}
                                 }
                         }
                         else
