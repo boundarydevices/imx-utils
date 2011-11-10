@@ -52,6 +52,16 @@ include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE := camera_to_v4l
+LOCAL_SRC_FILES := camera_to_v4l.cpp
+LOCAL_C_INCLUDES += $(LOCAL_PATH)
+LOCAL_SHARED_LIBRARIES := libcutils libc
+LOCAL_STATIC_LIBRARIES := libbdhw
+include $(BUILD_EXECUTABLE)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := fb2_overlay
 LOCAL_SRC_FILES := fb2_overlay.cpp
 LOCAL_CPPFLAGS += -DOVERLAY_MODULETEST
