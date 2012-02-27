@@ -609,19 +609,23 @@ static void parseArgs( int &argc, char const **argv )
 
 static int getcpu(unsigned &cpu) {
 	cpu = 0 ;
-	FILE *fIn = popen("cat /proc/cpuinfo | grep Revision | sed 's/.*: //'", "r");
+	FILE *fIn = fopen("/proc/cpuinfo", "r");
 	if (fIn) {
 		char inBuf[512];
-		if (fgets(inBuf,sizeof(inBuf),fIn)) {
-			char *next = inBuf ;
-			char *end = inBuf+strlen(inBuf);
-			while (isxdigit(*next)) {
-				cpu <<= 4 ;
-				unsigned char c = toupper(*next++);
-				if (('0' <= c)&&('9' >= c)) {
-					cpu |= (c-'0');
-				} else {
-					cpu |= (10+(c-'A'));
+		while (fgets(inBuf,sizeof(inBuf),fIn)) {
+			char *rev = strstr(inBuf,"Revision");
+			if (rev && (0 != (rev=strchr(rev+7,':')))) {
+				printf("CPU revision: %s (%s)\n", inBuf, rev);
+				char *next = rev+2;
+				char *end = inBuf+strlen(inBuf);
+				while (isxdigit(*next)) {
+					cpu <<= 4 ;
+					unsigned char c = toupper(*next++);
+					if (('0' <= c)&&('9' >= c)) {
+						cpu |= (c-'0');
+					} else {
+						cpu |= (10+(c-'A'));
+					}
 				}
 			}
 		}
