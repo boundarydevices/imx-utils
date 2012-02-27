@@ -2,10 +2,10 @@
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
-
 LOCAL_MODULE_TAGS := eng
 LOCAL_C_INCLUDES += $(LOCAL_PATH)
-LOCAL_SRC_FILES := camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp hexDump.cpp memcopy.S
+LOCAL_CPPFLAGS += -I$(LOCAL_PATH)/../../external/linux-lib/vpu/
+LOCAL_SRC_FILES := camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp hexDump.cpp memcopy.S v4l_display.cpp
 LOCAL_MODULE := libbdhw
 include $(BUILD_STATIC_LIBRARY)
 
@@ -55,6 +55,7 @@ LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE := camera_to_v4l
 LOCAL_SRC_FILES := camera_to_v4l.cpp
 LOCAL_C_INCLUDES += $(LOCAL_PATH)
+LOCAL_CPPFLAGS += -I$(LOCAL_PATH)/../../external/linux-lib/vpu/
 LOCAL_SHARED_LIBRARIES := libcutils libc
 LOCAL_STATIC_LIBRARIES := libbdhw
 include $(BUILD_EXECUTABLE)
