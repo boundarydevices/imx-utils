@@ -615,7 +615,6 @@ static int getcpu(unsigned &cpu) {
 		while (fgets(inBuf,sizeof(inBuf),fIn)) {
 			char *rev = strstr(inBuf,"Revision");
 			if (rev && (0 != (rev=strchr(rev+7,':')))) {
-				printf("CPU revision: %s (%s)\n", inBuf, rev);
 				char *next = rev+2;
 				char *end = inBuf+strlen(inBuf);
 				while (isxdigit(*next)) {
