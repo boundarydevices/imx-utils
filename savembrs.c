@@ -183,7 +183,7 @@ static void saveMBR(unsigned offs, char *mbrbuf)
 	}
 	write(fdout,mbrbuf,BLOCKSIZE);
 	close(fdout);
-	printf("fastboot flash mmc0:0x%x %s\n", offs, fname);
+	printf("fastboot flash mmc0:%u %s\n", offs, fname);
 }
 
 static void savePart(int fddisk, unsigned pnum, unsigned start, unsigned count)
