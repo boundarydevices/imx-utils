@@ -7,7 +7,7 @@ LD		:= ${ARCH}g++
 AR		:= ${ARCH}ar
 RANLIB		:= ${ARCH}ranlib
 STRIP		:= ${ARCH}strip
-CXXFLAGS	?= -I/tftpboot/ltib/usr/include -I/home/ericn/linux-bd/include -L/tftpboot/ltib/usr/lib
+CXXFLAGS	?= -I/tftpboot/ltib/usr/include -I${HOME}/linux/include -L/tftpboot/ltib/usr/lib
 VERSION := $(shell ./makeVersion.sh)
 
 showversion:
