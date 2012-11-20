@@ -15,3 +15,4 @@ imx_h264_encoder
 imx_mpeg4_encoder
 camera_to_v4l
 inputRead
+savembrs
