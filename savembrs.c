@@ -277,10 +277,14 @@ int main (int argc, char **argv)
 			if ((0 != part->sys_ind)
 			    &&
 			    (EXTENDED_PARTITION != part->sys_ind)) {
-				printf("# %cp%u\t%12u\t%12u\t%12u\t%s\n",
+				unsigned numsect = pend-pstart+1;
+				unsigned numbytes = numsect*512;
+				unsigned mb = numbytes>>20;
+				printf("# %cp%u\t%12u\t%12u\t%12u\t%12u bytes\t%5u MB\t%s\n",
 				       (part->boot_ind&0x80)?'*':' ',
 					pcount+1,
-					start+pstart, start+pend, pend-pstart+1,
+					start+pstart, start+pend, 
+					numsect, numbytes, mb,
 					find_part_type(part->sys_ind));
 				if (do_save) {
 					save_parts[numsaveparts].partnum = pcount+1 ;
