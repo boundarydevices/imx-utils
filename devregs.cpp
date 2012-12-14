@@ -199,11 +199,10 @@ enum ftState {
 };
 
 static char const *getDataPath(unsigned cpu) {
-	switch (cpu) {
+	switch (cpu & 0xff000) {
 		case 0x63000:
 			return "/etc/devregs_imx6x.dat" ;
-		case 0x53020:
-		case 0x53010:
+		case 0x53000:
 			return "/etc/devregs_imx53.dat" ;
 		default:
 			printf("unsupported CPU type: %x\n", cpu);
