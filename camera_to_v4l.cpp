@@ -25,6 +25,7 @@
 #include "imx_vpu.h"
 #include "imx_mjpeg_encoder.h"
 #include "imx_h264_encoder.h"
+#include "libjpeg_encoder.h"
 #endif
 
 #define ARRAY_SIZE(__arr) (sizeof(__arr)/sizeof(__arr[0]))
@@ -34,6 +35,7 @@ static char const *fileName = 0 ;
 static char *udpDest = 0 ;
 sockaddr_in dest ;
 static bool saveJPEG = false ;
+static bool swEncode = false ;
 static bool saveYUV = false ;
 static bool saveH264 = false ;
 
@@ -162,6 +164,7 @@ static void process_command(char *cmd,v4l_display_t *&overlay,cameraParams_t &pa
                         case 'j': {
 				if (1 < split.getCount()) {
 					saveJPEG = true ;
+					swEncode = ('J' == split.getPtr(0)[0]);
 					fileName = strdup(split.getPtr(1));
 				}
 				break;
@@ -427,36 +430,51 @@ int main( int argc, char const **argv ) {
 								fOut = fopen( fileName, "wb" );
 							if( fOut ) {
 								if (saveJPEG) {
-#ifndef ANDROID
-									if (0 == jpeg_encoder) {
-										jpeg_encoder = new mjpeg_encoder_t(
-												vpu,
-												params.getCameraWidth(),
-												params.getCameraHeight(),
-												params.getCameraFourcc(),
-												camera.getFd(),
-												camera.numBuffers(),
-												camera.getBuffers()
-										);
-									}
-									if (jpeg_encoder && jpeg_encoder->initialized()) {
-										void const *outData ;
-										unsigned    outLength ;
-										if( jpeg_encoder->encode(index, outData,outLength) ){
-											saveJPEG = false ;
-											fwrite(outData,1,outLength,fOut);
+									if (swEncode) {
+										swEncode = false;
+										libjpeg_encoder_t encoder ( params.getCameraWidth(),
+													    params.getCameraHeight(),
+													    params.getCameraFourcc(),
+													    camera.getBuffers()[index],
+													    camera.imgSize());
+										if (encoder.worked()) {
+											fwrite(encoder.jpegData(),
+											       encoder.dataSize(),
+											       1,fOut);
+											printf("wrote %u bytes\n", encoder.dataSize());
 											printf( "JPEG data saved\n" );
+										}
+									} else {
+										if (0 == jpeg_encoder) {
+											jpeg_encoder = new mjpeg_encoder_t(
+													vpu,
+													params.getCameraWidth(),
+													params.getCameraHeight(),
+													params.getCameraFourcc(),
+													camera.getFd(),
+													camera.numBuffers(),
+													camera.getBuffers()
+											);
+										}
+										if (jpeg_encoder && jpeg_encoder->initialized()) {
+											void const *outData ;
+											unsigned    outLength ;
+											if( jpeg_encoder->encode(index, outData,outLength) ){
+												saveJPEG = false ;
+												fwrite(outData,1,outLength,fOut);
+												printf( "JPEG data saved\n" );
+											} else
+												perror( "encode error");
 										} else
-											perror( "encode error");
-									} else
-#endif
-										perror( "invalid MJPEG jpeg_encoder\n");
+											perror( "invalid MJPEG jpeg_encoder\n");
+									}
 								}
 								else if (saveYUV){
 									fwrite(camera_frame,1,camera.imgSize(),fOut);
 								}
 								if (saveJPEG || saveYUV) {
 									fclose(fOut);
+									fOut = 0;
 									printf("done\n");
 									fflush(stdout);
 									saveJPEG = saveYUV = false ;

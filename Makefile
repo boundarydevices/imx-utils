@@ -15,7 +15,8 @@ showversion:
 
 INCS		:= -I/tftpboot/linux-bd/include
 
-LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp physMem.cpp hexDump.cpp imx_h264_encoder.cpp v4l_display.cpp
+LIBRARY_SRCS	:= camera.cpp cameraParams.cpp fb2_overlay.cpp fourcc.cpp imx_vpu.cpp imx_mjpeg_encoder.cpp \
+                   libjpeg_encoder.cpp physMem.cpp hexDump.cpp imx_h264_encoder.cpp v4l_display.cpp
 LIBRARY_OBJS	:= $(addsuffix .o,$(basename ${LIBRARY_SRCS}))
 LIBRARY		:= libimx-camera.a
 LIBRARY_REF	:= -L./ -limx-camera
@@ -28,7 +29,7 @@ camera_to_fb2: camera_to_fb2.cpp ${LIBRARY}
 	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -lvpu -lpthread -o $@
 
 camera_to_v4l: camera_to_v4l.cpp ${LIBRARY} 
-	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -lvpu -lpthread -o $@
+	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -lvpu -ljpeg -lpthread -o $@
 
 devregs: devregs.cpp ${LIBRARY} 
 	${CXX} ${CXXFLAGS} ${INCS} ${DEFS} $< ${LIBRARY_REF} -o $@
