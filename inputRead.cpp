@@ -27,7 +27,8 @@ int main( int argc, char const * const argv[] )
 		struct input_event event ;
 		int numRead ;
 		while (sizeof(event) == (numRead=read(fd.fd,&event,sizeof(event)))){
-printf( "%x:%x:%x\n", event.type, event.code, event.value);
+			printf( "%x:%x:%x\n", event.type, event.code, event.value);
+			fflush(stdout);
 			if (EV_ABS == event.type) {
 			    if (ABS_X == event.code)
 				    x = event.value ;
@@ -39,24 +40,32 @@ printf( "%x:%x:%x\n", event.type, event.code, event.value);
 			    }
 			    else {
 				    printf( "ABS:%x:%x:%x\n", event.type, event.code, event.value);
+				    fflush(stdout);
 			    }
 			}
 			else if (EV_KEY == event.type) {
 				if (BTN_TOUCH == event.code) {
 					if (0 == event.value) {
 						printf("release\n");
+						fflush(stdout);
 					} else {
 						printf("touch(%d) %3d\t%3d\n", device_id, x, y );
+						fflush(stdout);
 					}
-				} else
-                                        printf ("key(0x%x/0x%d)\n", event.code, event.value);
+				} else{
+					printf ("key(0x%x/0x%d)\n", event.code, event.value);
+					fflush(stdout);
+				}
 			}
 			else if (EV_SYN == event.type) {
 				if (touched) {
 					printf("touched(%d) %3d\t%3d\n", device_id, x, y );
+					fflush(stdout);
 				}
-			} else
+			} else{
 				printf( "unrecognized event 0x%x\n", event.type);
+				fflush(stdout);
+			}
 		}
 	}
 
